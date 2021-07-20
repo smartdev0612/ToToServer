@@ -1,0 +1,19 @@
+<config>
+	  <db_addr>127.0.0.1</db_addr>
+	  <db_port>1431</db_port>
+	  <db_name>mubayo2_lsports</db_name>
+	  <db_user>traxex</db_user>
+	  <db_pass>pwdTraxex0701</db_pass>
+	  <addr_server>175.125.95.163</addr_server>
+	  <socket_data>3032</socket_data>
+	  <socket_prematch>3033</socket_prematch>
+	  <socket_live>3031</socket_live>
+	  <http_port>3034</http_port>
+	  <power_server>116.120.58.147:3002/pbAuto</power_server>
+	  <use_prematch>yes</use_prematch>
+	  <use_live>yes</use_live>
+	  <use_powerball>yes</use_powerball>
+	  <use_powerladder>yes</use_powerladder>
+	  <server_http>3005</server_http>
+	  <server_port>3002</server_port>
+</config>
