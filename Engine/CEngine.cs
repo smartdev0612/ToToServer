@@ -438,6 +438,30 @@ namespace LSportsServer
                             CMySql.ExcuteQuery(sql);
                         }
                     }
+                    else // 총판에 상위부본사가 없는 경우 총판만 정산.
+                    {
+                        //-> 현재 총판 머니
+                        if (tex_money > 0)
+                        {
+                            DataRow info = list[0];
+                            sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
+                            info = CMySql.GetDataQuery(sql)[0];
+                            long before_money = Convert.ToInt64(info["rec_money"]);
+                            long after_money = before_money + tex_money;
+
+                            //-> 총판 머니 업데이트
+                            sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
+                            CMySql.ExcuteQuery(sql);
+
+                            //-> 정산로그 [get_tex_money, texdate] Update
+                            sql = $"update tb_recommend_tex set get_tex_money = '{tex_money}', texdate = '{strFromTime}' where idx = {tex_log_idx}";
+                            CMySql.ExcuteQuery(sql);
+
+                            sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{tex_money}', ";
+                            sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
+                            CMySql.ExcuteQuery(sql);
+                        }
+                    }
                 }
             }
         }

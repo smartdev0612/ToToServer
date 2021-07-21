@@ -497,6 +497,7 @@ namespace LSportsServer
                     }
                     else
                     {
+                        bool bCheck = false;
                         foreach (DataRow lmtInfo in lstLimit)
                         {
                             string strScript = Convert.ToString(lmtInfo["cross_script"]);
@@ -518,7 +519,6 @@ namespace LSportsServer
                                 }
                             }
 
-                            bool bCheck = false;
                             int index = 0;
                             foreach (int nf in lstFamily)
                             {
@@ -529,15 +529,19 @@ namespace LSportsServer
                             }
 
                             if (index == lstFamily.Count)
-                                bCheck = true;
-
-                            if (!bCheck)
                             {
-                                string strFamilyName = GetFamilyName(cls.lstFamily);
-                                // ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 {strFamilyName} 조합배팅은 제한합니다.", 1);
-                                ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 제한된 조합배팅입니다.", 1);
-                                return;
+                                bCheck = true;
+                                break;
                             }
+                               
+                        }
+
+                        if (!bCheck)
+                        {
+                            string strFamilyName = GetFamilyName(cls.lstFamily);
+                            // ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 {strFamilyName} 조합배팅은 제한합니다.", 1);
+                            ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 제한된 조합배팅입니다.", 1);
+                            return;
                         }
                     }
                 }
