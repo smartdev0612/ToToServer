@@ -76,7 +76,7 @@ namespace LSportsServer
         private void OnSportsBetting(string strPacket)
         {
 
-            Thread.Sleep(3000);
+            Thread.Sleep(7000);
 
             JToken objPacket = JObject.Parse(strPacket);
 
@@ -93,7 +93,7 @@ namespace LSportsServer
             string result = IsValidBetting(betcontent);
 
             if (result != "true")
-		    {
+            {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, result, 1);
                 return;
             }
@@ -101,7 +101,7 @@ namespace LSportsServer
             //유저정보를 얻는다.
             string sql = $"SELECT * FROM tb_member WHERE sn = {nUser}";
             DataRowCollection list = CMySql.GetDataQuery(sql);
-            if(list.Count == 0)
+            if (list.Count == 0)
             {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, "유저정보가 틀립니다.", 1);
                 return;
@@ -110,31 +110,43 @@ namespace LSportsServer
             int lev = CGlobal.ParseInt(userInfo["mem_lev"]);
 
             //-> DB기준 최소 배팅금 확인. 2016.08.10
-            sql = $"SELECT lev_min_money FROM tb_level_config WHERE lev = {lev}";
+            sql = $"SELECT lev_min_money, lev_max_money, lev_max_bonus FROM tb_level_config WHERE lev = {lev}";
             DataRow info = CMySql.GetDataQuery(sql)[0];
+            //-> 최대 당첨금
+            int bettingMaxBnsMoney = CGlobal.ParseInt(info["lev_max_bonus"]);
+
             int bettingMinMoney = CGlobal.ParseInt(info["lev_min_money"]);
-            if (betting < bettingMinMoney) 
+            if (betting < bettingMinMoney)
             {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, $"최소 배팅금은 {bettingMinMoney.ToString("N0")}원 입니다.", 1);
                 return;
             }
 
+            //-> Apollo Created. 2021.07.26
+            //-> 최대 배팅금 확인
+            int bettingMaxMoney = CGlobal.ParseInt(info["lev_max_money"]);
+            if (betting > bettingMaxMoney)
+            {
+                ReturnPacket(CDefine.PACKET_SPORT_BET, $"최대 배팅금은 {bettingMaxMoney.ToString("N0")}원 입니다.", 1);
+                return;
+            }
+
             int dbCash = CGlobal.ParseInt(userInfo["g_money"]);
-            if (dbCash < betting || betting < 0 ) 
+            if (dbCash < betting || betting < 0)
             {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, "보유머니가 부족합니다.", 1);
                 return;
             }
 
             string buy = string.Empty;
-            if (mode == "betting") 
+            if (mode == "betting")
             {
-			    buy = "Y";
-            } 
-            else if (mode == "cart") 
+                buy = "Y";
+            }
+            else if (mode == "cart")
             {
-			    buy = "N";
-            } 
+                buy = "N";
+            }
             else
             {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, "잘못된 인자입니다.", 1);
@@ -143,7 +155,7 @@ namespace LSportsServer
 
             string[] data = betcontent.Split('#');
             int betting_cnt = data.Length - 1; //-> 배팅경기수
-            if(betting_cnt < 0)
+            if (betting_cnt < 0)
             {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, "배팅처리가 되지 않았습니다. 다시 시도하십시오.", 1);
                 return;
@@ -156,8 +168,8 @@ namespace LSportsServer
 
             DateTime baseTime = CMyTime.ConvertStrToTime("2000-01-01 00:00:00");
             DateTime nowTime = CMyTime.GetMyTime();
-            string protoId = (CMyTime.ConvertToUnixTimestamp(nowTime) - CMyTime.ConvertToUnixTimestamp(baseTime)  + (9 * 60 * 60) + lastIdx).ToString();
-            if (protoId == "") 
+            string protoId = (CMyTime.ConvertToUnixTimestamp(nowTime) - CMyTime.ConvertToUnixTimestamp(baseTime) + (9 * 60 * 60) + lastIdx).ToString();
+            if (protoId == "")
             {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, "구매번호를 확인하여 주세요.", 1);
                 return;
@@ -170,16 +182,16 @@ namespace LSportsServer
             for (int i = 0; i < betting_cnt; i++) {
                 List<string> lstParam = data[i].Split("||").ToList();
 
-                if(lstParam[12] == "이벤트")
+                if (lstParam[12] == "이벤트")
                 {
                     lstParamArr.Add(lstParam);
                     continue;
                 }
 
-			    int childSn = CGlobal.ParseInt(lstParam[0].Split('_')[0]);
-                int family = CGlobal.ParseInt(lstParam[0].Split('_')[2]);
+                int childSn = CGlobal.ParseInt(lstParam[0].Split('_')[0]);
+                int market = CGlobal.ParseInt(lstParam[0].Split('_')[1]);
                 lstParam[0] = childSn.ToString();
-                lstParam[13] = family.ToString();
+                lstParam[13] = market.ToString();
                 int selected = CGlobal.ParseInt(lstParam[1]);
                 string betId = Convert.ToString(lstParam[14]);
                 double selectedRate = Convert.ToDouble(lstParam[7]);
@@ -192,7 +204,7 @@ namespace LSportsServer
                 //    selected = 2;
 
                 CGame clsGame = CGlobal.GetGameInfoByCode(childSn);
-                if(clsGame == null)
+                if (clsGame == null)
                 {
                     ReturnPacket(CDefine.PACKET_SPORT_BET, "경기타입이 오류가 발생되였습니다.", 1);
                     return;
@@ -218,27 +230,27 @@ namespace LSportsServer
                     ReturnPacket(CDefine.PACKET_SPORT_BET, "배당이 변경되였습니다.", 1);
                     return;
                 }
-                if(clsRate.m_nStatus != 1)
+                if (clsRate.m_nStatus != 1)
                 {
                     ReturnPacket(CDefine.PACKET_SPORT_BET, "배당이 변경되였습니다.", 1);
                     return;
                 }
 
                 double delta = 0.5f;
-                if(selected == 0)
+                if (selected == 0)
                 {
                     delta = Math.Abs(clsRate.m_fHRate - selectedRate);
                 }
-                else if(selected == 1)
+                else if (selected == 1)
                 {
                     delta = Math.Abs(clsRate.m_fDRate - selectedRate);
                 }
-                else if(selected == 2)
+                else if (selected == 2)
                 {
                     delta = Math.Abs(clsRate.m_fARate - selectedRate);
                 }
 
-                if(delta > 0.1)
+                if (delta > 0.1)
                 {
                     ReturnPacket(CDefine.PACKET_SPORT_BET, "배당이 변경되였습니다.", 1);
                     return;
@@ -251,181 +263,84 @@ namespace LSportsServer
                 lstParamArr.Add(lstParam);
             }
 
-      //      string kind = string.Empty;
-      //      if (_gameType == "multi" || _gameType == "live" || _gameType == "abroad")
-		    //{
-			   // kind = "cross";
-      //      } 
-      //      else if (_gameType == "handi") 
-      //      {
-			   // kind = "handi";
-      //      } 
-      //      else if (_gameType == "special") 
-      //      {
-			   // kind = "special";
-      //      } 
-      //      else if (_gameType == "real") 
-      //      {
-			   // kind = "real";
-      //      } 
+            //      string kind = string.Empty;
+            //      if (_gameType == "multi" || _gameType == "live" || _gameType == "abroad")
+            //{
+            // kind = "cross";
+            //      } 
+            //      else if (_gameType == "handi") 
+            //      {
+            // kind = "handi";
+            //      } 
+            //      else if (_gameType == "special") 
+            //      {
+            // kind = "special";
+            //      } 
+            //      else if (_gameType == "real") 
+            //      {
+            // kind = "real";
+            //      } 
 
 
             double sumSelectRate = 1.0;
-            for (int i = 0; i < lstParamArr.Count; i++) 
-             {
+            for (int i = 0; i < lstParamArr.Count; i++)
+            {
                 List<string> data_detail = lstParamArr[i];
 
                 int childSn = CGlobal.ParseInt(data_detail[0]);
-			    int selected = CGlobal.ParseInt(data_detail[1]);
-			    double rate1 = Convert.ToDouble(data_detail[4]);
-			    double rate2 = Convert.ToDouble(data_detail[5]);
-			    double rate3 = Convert.ToDouble(data_detail[6]);
-			    double selectedRate = Convert.ToDouble(data_detail[7]);
+                int selected = CGlobal.ParseInt(data_detail[1]);
+                double rate1 = Convert.ToDouble(data_detail[4]);
+                double rate2 = Convert.ToDouble(data_detail[5]);
+                double rate3 = Convert.ToDouble(data_detail[6]);
+                double selectedRate = Convert.ToDouble(data_detail[7]);
 
-			
-			    //-> 넘어온 선택배당율(selectedRate) 검증. 2016.08.10
-			    int errorRate = 0;
-                if (selected == 0 ) 
+
+                //-> 넘어온 선택배당율(selectedRate) 검증. 2016.08.10
+                int errorRate = 0;
+                if (selected == 0)
                 {
-                    if (rate1 != selectedRate ) 
+                    if (rate1 != selectedRate)
                         errorRate = 1;
-                } 
-                else if (selected == 1) 
+                }
+                else if (selected == 1)
                 {
-                    if (rate2 != selectedRate ) 
+                    if (rate2 != selectedRate)
                         errorRate = 1;
-                } 
-                else if (selected == 2) 
+                }
+                else if (selected == 2)
                 {
-                    if (rate3 != selectedRate ) 
+                    if (rate3 != selectedRate)
                         errorRate = 1;
                 }
 
-                if (errorRate == 1) 
+                if (errorRate == 1)
                 {
                     ReturnPacket(CDefine.PACKET_SPORT_BET, "배당(기준점)에 오류가 발생되였습니다.", 1);
                     return;
                 }
 
                 //-> 총 배당율 합계 계산. 2016.08.10
-			    sumSelectRate = sumSelectRate * selectedRate;
+                sumSelectRate = sumSelectRate * selectedRate;
             }
 
             double resultRate = Convert.ToDouble(sumSelectRate.ToString("0.00"));
             if (resultRate > 100)
-		    {
+            {
                 ReturnPacket(CDefine.PACKET_SPORT_BET, "스포츠 배팅은 100배당 이상은 배팅이 불가능 합니다.", 1);
                 return;
             }
 
             //-> 축벳 체크 (배팅한 게임 1개씩 가져와서 같은게임(childSn) 같은 방향(selected)에 배팅한 이력이 있는지 확인)
-		    List<int> copy_bte_list = new List<int>(); //-> 중복 배팅 확인.
-		    List<string> cukbet_no_list = new List<string>();
-		    List<string> newCukbet_no_list = new List<string>();
-            for ( int i = 0; i < lstParamArr.Count; i++ ) 
-            {
-                List<string> data_detail = lstParamArr[i];		
-                int childSn = CGlobal.ParseInt(data_detail[0]);
-                int selected = CGlobal.ParseInt(data_detail[1]);
-                string homeTeamName = data_detail[2];
-                string awayTeamName = data_detail[3];
-                double rate1 = Convert.ToDouble(data_detail[4]);
-                double rate2 = Convert.ToDouble(data_detail[5]);
-                double rate3 = Convert.ToDouble(data_detail[6]);
-			    double selectedRate = Convert.ToDouble(data_detail[7]);
-			    string gameType = data_detail[8];
-			    int subChildSn = CGlobal.ParseInt(data_detail[9]);
-
-                if ( selected == 0 ) 
-                    selected = 1;
-                else if ( selected == 1 ) 
-                    selected = 3;
-                else if ( selected == 2 ) 
-                    selected = 2;
-
-                if (homeTeamName.Trim().Length == homeTeamName.Trim().Replace("보너스", "").Length)
-                {
-				    //-> 같은게임(childSn) 같은 방향(selected)에 배팅한 betting_no를 모두 저장
-                    sql = $"select distinct(a.betting_no) from tb_total_betting a, tb_total_cart b where a.betting_no = b.betting_no and a.result = 0 and a.member_sn = '{nUser}' and a.sub_child_sn = '{subChildSn}' and a.select_no = '{selected}'";
-                    DataRowCollection cukbet_row = CMySql.GetDataQuery(sql);
-                    for (int j = 0; j < cukbet_row.Count; j++ ) 
-                    {
-                        string strBettingNo = Convert.ToString(cukbet_row[j]["betting_no"]);
-                        if(cukbet_no_list.Exists(value=>value == strBettingNo))
-                        {
-                            int nIndex = cukbet_no_list.FindIndex(value => value == strBettingNo);
-                            copy_bte_list[nIndex]++;
-                        }
-                        else
-                        {
-                            cukbet_no_list.Add(strBettingNo);
-                            copy_bte_list.Add(1);
-                        }
-                    }
-                }
-            }
-
-            //-> 배팅번호 게임중(다폴 등) 낙첨된 경기가 있으면 해당 배팅번호 제외.
-            for (int j = 0; j < cukbet_no_list.Count; j++ ) 
-            {
-                sql = $"select betting_no from tb_total_betting where betting_no = '{cukbet_no_list[j]}' and result = 2";
-                DataRowCollection loseGameRow = CMySql.GetDataQuery(sql);
-                if (loseGameRow.Count == 0 ) 
-                {
-				    newCukbet_no_list.Add(cukbet_no_list[j]);
-                }
-            }
-
-            //-> 축벳 체크 (배당가져와서 총 배당금 측정)
-		    int total_ckbet_money = 0;
-            for ( int i = 0; i < newCukbet_no_list.Count; i++ )
-            {
-			    double ckbet_rate = 1;
-			    int ckbet_money = 0;
-                sql = $"select select_rate, bet_money from tb_total_betting where member_sn = '{nUser}' and betting_no = '{newCukbet_no_list[i]}'";
-                DataRowCollection betgame_row = CMySql.GetDataQuery(sql);
-                for ( int j = 0; j < betgame_row.Count; j++ )
-                {
-				    ckbet_rate = ckbet_rate * Convert.ToDouble(betgame_row[j]["select_rate"]);
-				    ckbet_money = CGlobal.ParseInt(betgame_row[j]["bet_money"]);
-                }
-			    //-> 축벳 체크된 총 배당금
-			    total_ckbet_money = (total_ckbet_money + CGlobal.ParseInt(ckbet_money * ckbet_rate));
-            }
-
-            //-> 현재 배팅한 게임에 배당금.
-		    int this_bedang_money = CGlobal.ParseInt(betting * resultRate);
-            sql = $"select lev_max_money, lev_max_money_special, lev_max_money_single, lev_max_money_single_special, lev_max_bonus_cukbet, lev_max_bonus_cukbet_special from tb_level_config where lev = {lev}";
-            DataRow array_cukbet = CMySql.GetDataQuery(sql)[0];
-            int ckbet_max_money = 0;
-            if ( specialType == 0 ) 
-                ckbet_max_money = CGlobal.ParseInt(array_cukbet["lev_max_bonus_cukbet"]) + 0;
-            else 
-                ckbet_max_money = CGlobal.ParseInt(array_cukbet["lev_max_bonus_cukbet_special"]) + 0;
-
-            if ( ckbet_max_money > 0 && total_ckbet_money != 0) 
-            {
-                //-> 현재 배당금 + 축벳 배당금이 축벳 제한 금액을 초과 할 경우.
-                if (( this_bedang_money + total_ckbet_money ) > ckbet_max_money ) 
-                {
-                    string strMsg = $"축배팅 제한상환가는 {ckbet_max_money.ToString("N0")}원입니다 배팅금액을 조정해주세요.\\n[ 현재 배팅 배당금 : {this_bedang_money.ToString("N0")}원 ] \\n[ 보유 축뱃 배당금 : {total_ckbet_money.ToString("N0")})원 ]\\n\\n 합계 : {this_bedang_money.ToString("N0")} + {total_ckbet_money.ToString("N0")} = {(this_bedang_money + total_ckbet_money).ToString("N0")}원";
-                    ReturnPacket(CDefine.PACKET_SPORT_BET, strMsg, 1);
-                    return;
-                }
-            }
-            
-            cukbet_no_list = new List<string>();
-		    newCukbet_no_list = new List<string>();
-
-            //-> 배팅 제한 체크.
-            List<CBetCheck> lstBetCheck = new List<CBetCheck>();
-
-            for (int i = 0; i <lstParamArr.Count; i++)
+            List<int> copy_bte_list = new List<int>(); //-> 중복 배팅 확인.
+            List<string> cukbet_no_list = new List<string>();
+            List<string> newCukbet_no_list = new List<string>();
+            for (int i = 0; i < lstParamArr.Count; i++)
             {
                 List<string> data_detail = lstParamArr[i];
                 int childSn = CGlobal.ParseInt(data_detail[0]);
                 int selected = CGlobal.ParseInt(data_detail[1]);
-                int familyId = CGlobal.ParseInt(data_detail[13]);
+                string homeTeamName = data_detail[2];
+                string awayTeamName = data_detail[3];
                 double rate1 = Convert.ToDouble(data_detail[4]);
                 double rate2 = Convert.ToDouble(data_detail[5]);
                 double rate3 = Convert.ToDouble(data_detail[6]);
@@ -440,22 +355,155 @@ namespace LSportsServer
                 else if (selected == 2)
                     selected = 2;
 
-                if(lstBetCheck.Exists(value=>value.nChildSn == childSn))
+                if (homeTeamName.Trim().Length == homeTeamName.Trim().Replace("보너스", "").Length)
                 {
-                    lstBetCheck.Find(value => value.nChildSn == childSn).lstFamily.Add(familyId);
+                    //-> 같은게임(childSn) 같은 방향(selected)에 배팅한 betting_no를 모두 저장
+                    sql = $"select distinct(a.betting_no) from tb_total_betting a, tb_total_cart b where a.betting_no = b.betting_no and a.result = 0 and a.member_sn = '{nUser}' and a.sub_child_sn = '{subChildSn}' and a.select_no = '{selected}'";
+                    DataRowCollection cukbet_row = CMySql.GetDataQuery(sql);
+                    for (int j = 0; j < cukbet_row.Count; j++)
+                    {
+                        string strBettingNo = Convert.ToString(cukbet_row[j]["betting_no"]);
+                        if (cukbet_no_list.Exists(value => value == strBettingNo))
+                        {
+                            int nIndex = cukbet_no_list.FindIndex(value => value == strBettingNo);
+                            copy_bte_list[nIndex]++;
+                        }
+                        else
+                        {
+                            cukbet_no_list.Add(strBettingNo);
+                            copy_bte_list.Add(1);
+                        }
+                    }
+                }
+            }
+
+            //-> 배팅번호 게임중(다폴 등) 낙첨된 경기가 있으면 해당 배팅번호 제외.
+            for (int j = 0; j < cukbet_no_list.Count; j++)
+            {
+                sql = $"select betting_no from tb_total_betting where betting_no = '{cukbet_no_list[j]}' and result = 2";
+                DataRowCollection loseGameRow = CMySql.GetDataQuery(sql);
+                if (loseGameRow.Count == 0)
+                {
+                    newCukbet_no_list.Add(cukbet_no_list[j]);
+                }
+            }
+
+            //-> 축벳 체크 (배당가져와서 총 배당금 측정)
+            int total_ckbet_money = 0;
+            for (int i = 0; i < newCukbet_no_list.Count; i++)
+            {
+                double ckbet_rate = 1;
+                int ckbet_money = 0;
+                sql = $"select select_rate, bet_money from tb_total_betting where member_sn = '{nUser}' and betting_no = '{newCukbet_no_list[i]}'";
+                DataRowCollection betgame_row = CMySql.GetDataQuery(sql);
+                for (int j = 0; j < betgame_row.Count; j++)
+                {
+                    ckbet_rate = ckbet_rate * Convert.ToDouble(betgame_row[j]["select_rate"]);
+                    ckbet_money = CGlobal.ParseInt(betgame_row[j]["bet_money"]);
+                }
+                //-> 축벳 체크된 총 배당금
+                total_ckbet_money = (total_ckbet_money + CGlobal.ParseInt(ckbet_money * ckbet_rate));
+            }
+
+            //-> 현재 배팅한 게임에 배당금.
+            int this_bedang_money = CGlobal.ParseInt(betting * resultRate);
+            sql = $"select lev_max_money, lev_max_money_special, lev_max_money_single, lev_max_money_single_special, lev_max_bonus_cukbet, lev_max_bonus_cukbet_special from tb_level_config where lev = {lev}";
+            DataRow array_cukbet = CMySql.GetDataQuery(sql)[0];
+            int ckbet_max_money = 0;
+            if (specialType == 0)
+                ckbet_max_money = CGlobal.ParseInt(array_cukbet["lev_max_bonus_cukbet"]) + 0;
+            else
+                ckbet_max_money = CGlobal.ParseInt(array_cukbet["lev_max_bonus_cukbet_special"]) + 0;
+
+            if (ckbet_max_money > 0 && total_ckbet_money != 0)
+            {
+                //-> 현재 배당금 + 축벳 배당금이 축벳 제한 금액을 초과 할 경우.
+                if ((this_bedang_money + total_ckbet_money) > ckbet_max_money)
+                {
+                    string strMsg = $"축배팅 제한상환가는 {ckbet_max_money.ToString("N0")}원입니다.<br>배팅금액을 조정해주세요.<br>[ 현재 배팅 배당금 : {this_bedang_money.ToString("N0")}원 ] <br>[ 보유 축뱃 배당금 : {total_ckbet_money.ToString("N0")})원 ]<br><br>합계 : {this_bedang_money.ToString("N0")} + {total_ckbet_money.ToString("N0")} = {(this_bedang_money + total_ckbet_money).ToString("N0")}원";
+                    ReturnPacket(CDefine.PACKET_SPORT_BET, strMsg, 1);
+                    return;
+                }
+            }
+
+            for (int i = 0; i < lstParamArr.Count; i++)
+            {
+                List<string> data_detail = lstParamArr[i];
+
+                int childSn = CGlobal.ParseInt(data_detail[0]);
+                int gameType = CGlobal.ParseInt(data_detail[8]);
+
+                int sumBetMoney = 0;    // 한 경기에 배팅한 총 금액
+                sql = $"SELECT IFNULL(SUM(tb_total_cart.betting_money), 0) AS sumBetMoney FROM tb_total_cart WHERE tb_total_cart.betting_no IN ( SELECT tb_total_betting.betting_no FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.sn = {childSn} AND tb_total_betting.game_type = {gameType}  AND tb_total_betting.member_sn = '{nUser}' GROUP BY tb_total_betting.betting_no )";
+                DataRowCollection rowList = CMySql.GetDataQuery(sql);
+                if (rowList.Count > 0)
+                {
+                    sumBetMoney = CGlobal.ParseInt(rowList[0]["sumBetMoney"]);
+                }
+
+                if ((betting + sumBetMoney) > bettingMaxMoney)
+                {
+                    ReturnPacket(CDefine.PACKET_SPORT_BET, $"한 경기 배팅금액은 최대 ${bettingMaxMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
+                    return;
+                }
+
+                int sumResultMoney = 0;    // 한 경기에 당첨한 총 금액
+                sql = $"SELECT IFNULL(SUM(tb_total_cart.result_money), 0) AS sumResultMoney FROM tb_total_cart WHERE tb_total_cart.betting_no IN ( SELECT tb_total_betting.betting_no FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.sn = {childSn} AND tb_total_betting.game_type = {gameType}  AND tb_total_betting.member_sn = '{nUser}' GROUP BY tb_total_betting.betting_no )";
+                rowList = CMySql.GetDataQuery(sql);
+                if (rowList.Count > 0)
+                {
+                    sumResultMoney = CGlobal.ParseInt(rowList[0]["sumResultMoney"]);
+                }
+
+                if ((this_bedang_money + sumResultMoney) > bettingMaxBnsMoney)
+                {
+                    ReturnPacket(CDefine.PACKET_SPORT_BET, $"한 경기 적중금액은 최대 ${bettingMaxBnsMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
+                    return;
+                }
+            }
+
+            cukbet_no_list = new List<string>();
+            newCukbet_no_list = new List<string>();
+
+            //-> 배팅 제한 체크.
+            List<CBetCheck> lstBetCheck = new List<CBetCheck>();
+
+            for (int i = 0; i < lstParamArr.Count; i++)
+            {
+                List<string> data_detail = lstParamArr[i];
+                int childSn = CGlobal.ParseInt(data_detail[0]);
+                int selected = CGlobal.ParseInt(data_detail[1]);
+                int marketId = CGlobal.ParseInt(data_detail[13]);
+                double rate1 = Convert.ToDouble(data_detail[4]);
+                double rate2 = Convert.ToDouble(data_detail[5]);
+                double rate3 = Convert.ToDouble(data_detail[6]);
+                double selectedRate = Convert.ToDouble(data_detail[7]);
+                string gameType = data_detail[8];
+                int subChildSn = CGlobal.ParseInt(data_detail[9]);
+
+                if (selected == 0)
+                    selected = 1;
+                else if (selected == 1)
+                    selected = 3;
+                else if (selected == 2)
+                    selected = 2;
+
+                if (lstBetCheck.Exists(value => value.nChildSn == childSn))
+                {
+                    lstBetCheck.Find(value => value.nChildSn == childSn).lstMarket.Add(marketId);
                 }
                 else
                 {
                     CBetCheck cls = new CBetCheck();
                     cls.nChildSn = childSn;
-                    cls.lstFamily.Add(familyId);
+                    cls.lstMarket.Add(marketId);
                     lstBetCheck.Add(cls);
                 }
             }
 
-            foreach(CBetCheck cls in lstBetCheck)
+            foreach (CBetCheck cls in lstBetCheck)
             {
-                if (cls.lstFamily.Count == 1)
+                if (cls.lstMarket.Count == 1)
                     continue;
 
                 sql = $"select * from tb_child where sn = {cls.nChildSn}";
@@ -479,7 +527,7 @@ namespace LSportsServer
                         nty = 3;
                         strType = "라이브";
                     }
-                       
+
                     int sport_id = CGlobal.ParseInt(lstChild[0]["sport_id"]);
                     string strSportName = Convert.ToString(lstChild[0]["sport_name"]);
 
@@ -488,8 +536,8 @@ namespace LSportsServer
 
                     if (lstLimit == null || lstLimit.Count == 0)
                     {
-                        int nFamilyCnt = cls.lstFamily.Count;
-                        if (nFamilyCnt > 1)
+                        int nMarketCnt = cls.lstMarket.Count;
+                        if (nMarketCnt > 1)
                         {
                             ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 조합배팅은 제한합니다.", 1);
                             return;
@@ -502,43 +550,43 @@ namespace LSportsServer
                         {
                             string strScript = Convert.ToString(lmtInfo["cross_script"]);
                             string[] arrScript = strScript.Split('+');
-                            List<int> lstFamily = new List<int>();
+                            List<int> lstMarket = new List<int>();
 
                             foreach (string str in arrScript)
                             {
                                 try
                                 {
-                                    int nfamily = CGlobal.ParseInt(str);
-                                    lstFamily.Add(nfamily);
+                                    int nMarket = CGlobal.ParseInt(str);
+                                    lstMarket.Add(nMarket);
 
                                 }
                                 catch (Exception err)
                                 {
                                     Console.WriteLine(err.Message);
-                                    lstFamily.Add(0);
+                                    lstMarket.Add(0);
                                 }
                             }
 
                             int index = 0;
-                            foreach (int nf in lstFamily)
+                            foreach (int nf in lstMarket)
                             {
-                                if (cls.lstFamily.Exists(value => value == nf))
+                                if (cls.lstMarket.Exists(value => value == nf))
                                 {
                                     index++;
                                 }
                             }
 
-                            if (index == lstFamily.Count)
+                            if (index == lstMarket.Count)
                             {
                                 bCheck = true;
                                 break;
                             }
-                               
+
                         }
 
                         if (!bCheck)
                         {
-                            string strFamilyName = GetFamilyName(cls.lstFamily);
+                            // string strFamilyName = GetFamilyName(cls.lstFamily);
                             // ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 {strFamilyName} 조합배팅은 제한합니다.", 1);
                             ReturnPacket(CDefine.PACKET_SPORT_BET, $"{strType} {strSportName}에서 제한된 조합배팅입니다.", 1);
                             return;
@@ -550,27 +598,27 @@ namespace LSportsServer
             int lastChildSn = 0;
             //' tb_betting 에 1게임씩 추가
             for (int i = 0; i < lstParamArr.Count; i++)
-		    {
+            {
                 List<string> data_detail = lstParamArr[i];
-			
-			    int childSn = CGlobal.ParseInt(data_detail[0]);
-			    int selected = CGlobal.ParseInt(data_detail[1]);
-			    float rate1 = Convert.ToSingle(data_detail[4]);
+
+                int childSn = CGlobal.ParseInt(data_detail[0]);
+                int selected = CGlobal.ParseInt(data_detail[1]);
+                float rate1 = Convert.ToSingle(data_detail[4]);
                 float rate2 = Convert.ToSingle(data_detail[5]);
                 float rate3 = Convert.ToSingle(data_detail[6]);
-			    double selectedRate = Convert.ToDouble(data_detail[7]);
-			    int gameType = CGlobal.ParseInt(data_detail[8]);
-			    int subChildSn = CGlobal.ParseInt(data_detail[9]);
-			    long betid = Convert.ToInt64(data_detail[14]);
+                double selectedRate = Convert.ToDouble(data_detail[7]);
+                int gameType = CGlobal.ParseInt(data_detail[8]);
+                int subChildSn = CGlobal.ParseInt(data_detail[9]);
+                long betid = Convert.ToInt64(data_detail[14]);
 
-                if (selected == 0)			
+                if (selected == 0)
                     selected = 1;
-                else if(selected == 1)    
+                else if (selected == 1)
                     selected = 3;
-                else if(selected == 2)    
+                else if (selected == 2)
                     selected = 2;
 
-                if(data_detail[12] == "이벤트")
+                if (data_detail[12] == "이벤트")
                 {
                     rate1 = Convert.ToSingle(data_detail[7]);
                     rate2 = rate1;
@@ -631,7 +679,7 @@ namespace LSportsServer
             string chkFolderOption = Convert.ToString(bonusInfo["chk_folder"]);
             if (chkFolderOption == "1")
             {
-			    int bouns_rate_percent = CGlobal.ParseInt(bonusInfo[$"folder_bouns{betting_cnt}"]);
+                int bouns_rate_percent = CGlobal.ParseInt(bonusInfo[$"folder_bouns{betting_cnt}"]);
                 sql = $"update tb_total_cart set bouns_rate = {bouns_rate_percent} where member_sn = {nUser} and betting_no = '{protoId}'";
                 CMySql.ExcuteQuery(sql);
             }
@@ -644,8 +692,35 @@ namespace LSportsServer
 
             if (mem_status == "N")
             {
-			    sql = $"insert into tb_money_log(member_sn,amount,before_money,after_money,regdate,state, status_message, log_memo) values({nUser}, {betting}, {before}, {after}, now(), 3, '배팅', '')";
+                sql = $"insert into tb_money_log(member_sn,amount,before_money,after_money,regdate,state, status_message, log_memo) values({nUser}, {betting}, {before}, {after}, now(), 3, '배팅', '')";
                 CMySql.ExcuteQuery(sql);
+
+                if (specialType == 22)
+                {
+                    //-> 배팅 알람 업데이트.
+                    if (betting >= 300000)
+                    {
+                        sql = $"update tb_alarm_flag set betting_vfootball_big = betting_vfootball_big + 1 where idx = 1";
+                    }
+                    else
+                    {
+                        sql = $"update tb_alarm_flag set betting_vfootball = betting_vfootball + 1 where idx = 1";
+                    }
+                }
+                else
+                {
+                    //-> 배팅 알람 업데이트.
+                    if (betting >= 300000)
+                    {
+                        sql = $"update tb_alarm_flag set betting_sport_big = betting_sport_big + 1 where idx = 1";
+                    }
+                    else
+                    {
+                        sql = $"update tb_alarm_flag set betting_sport = betting_sport + 1 where idx = 1";
+                    }
+
+                    CMySql.ExcuteQuery(sql);
+                }
             }
 
             /*베팅수가 10개이상이고, 1만원이상인 경기는 자동으로 잭팟게시글을 남긴다.*/
@@ -653,33 +728,6 @@ namespace LSportsServer
             {
                 string title = $"{author} 님의 잭팟베팅^^";
                 sql = $"insert into tb_content(province, title, imgnum, pic, author, top, content, ip, time, hit, betting_no, logo) values('9', '{title}', '0', '', '{author}', '1', '잭팟이벤트', '{bettingIp}', now(), '0', '{protoId}', 'gadget')";
-                CMySql.ExcuteQuery(sql);
-            }
-
-            if(specialType == 22)
-            {
-                //-> 배팅 알람 업데이트.
-                if ( betting >= 300000 ) 
-                {
-                    sql = $"update tb_alarm_flag set betting_vfootball_big = betting_vfootball_big + 1 where idx = 1";
-                } 
-                else
-                {
-				    sql = $"update tb_alarm_flag set betting_vfootball = betting_vfootball + 1 where idx = 1";
-                }
-            }
-            else
-            {
-                //-> 배팅 알람 업데이트.
-                if (betting >= 300000)
-                {
-                    sql = $"update tb_alarm_flag set betting_sport_big = betting_sport_big + 1 where idx = 1";
-                }
-                else
-                {
-                    sql = $"update tb_alarm_flag set betting_sport = betting_sport + 1 where idx = 1";
-                }
-
                 CMySql.ExcuteQuery(sql);
             }
 
@@ -927,9 +975,17 @@ namespace LSportsServer
                 CGlobal.ShowConsole(err.Message);
                 return;
             }
-            
-            lstGame = lstGame.FindAll(value => value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(3) && value.IsFinishGame() == false);
-            
+
+            try
+            {
+                lstGame = lstGame.FindAll(value => value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(3) && value.IsFinishGame() == false);
+            }
+            catch (Exception err)
+            {
+                CGlobal.ShowConsole(err.Message);
+                return;
+            }
+
             int nSports = 0;
             if (m_reqParam == null)
                 return;
@@ -956,10 +1012,18 @@ namespace LSportsServer
             }
             else
             {
-                lstGame = lstGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
-                lstGame = lstGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
+                try
+                {
+                    lstGame = lstGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
+                    lstGame = lstGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
                                                 && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose())
                                                 && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose()).m_nStatus < 2);
+                }
+                catch (Exception err)
+                {
+                    CGlobal.ShowConsole(err.Message);
+                    return;
+                }
             }
 
 
@@ -976,7 +1040,7 @@ namespace LSportsServer
 
             if (m_reqParam.m_nLive == 0)
             {
-                int[] lstFilter1 = { 1, 2, 3, 28, 52, 226, 342, 866 };
+                int[] lstFilter1 = { 1, 2, 3, 28, 52, 226, 342, 1558 };
                 lstGame = lstGame.FindAll(info=> info.GetPrematchBetRateList().Exists(value => (value.m_nStatus == 1 || value.CheckWinDrawLose()) && lstFilter1.ToList().Exists(val => val == value.m_nMarket)));
             }
             else if (m_reqParam.m_nLive == 1)
@@ -1025,7 +1089,7 @@ namespace LSportsServer
                 List<CBetRate> lstBetRate = null;
                 if (m_reqParam.m_nLive == 0)
                 {
-                    int[] lstFilter1 = { 1, 2, 3, 28, 52, 226, 342, 866 };
+                    int[] lstFilter1 = { 1, 2, 3, 28, 52, 226, 342, 1558 };
                     lstBetRate = clsGame.GetPrematchBetRateList().FindAll(value => (value.m_nStatus == 1 || value.CheckWinDrawLose()) && lstFilter1.ToList().Exists(val => val == value.m_nMarket));
                 }
                 else if(m_reqParam.m_nLive == 1)
@@ -1173,6 +1237,6 @@ namespace LSportsServer
     public class CBetCheck
     {
         public int nChildSn;
-        public List<int> lstFamily = new List<int>();
+        public List<int> lstMarket = new List<int>();
     }
 }

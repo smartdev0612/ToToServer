@@ -17,7 +17,7 @@ namespace LSportsServer
             string btGameName = Convert.ToString(packet["btGameName"]);			            //-> 배팅게임종류
 		    int btMoney = CGlobal.ParseInt(packet["btMoney"]);				                //-> 배팅금액
 		    string btGameTypeList = Convert.ToString(packet["btGameType"]);	                //-> 배팅게임타입
-
+            
             int btGameTh = 0;
             if (btGameName == "powerball")
             {
@@ -45,7 +45,6 @@ namespace LSportsServer
                 ReturnPacket(nRetCode, "6시부터 배팅 가능합니다.", 1);
                 return;
             }
-
 
             //-> 미니게임 리그번호
             
@@ -85,7 +84,7 @@ namespace LSportsServer
                 ReturnPacket(nRetCode, "배팅타입정보가 틀립니다.", 1);
                 return;
             }
-
+            
             DateTime dt = CMyTime.GetMyTime().AddSeconds(0 - CPowerball.m_nGameTime + 35);
             string gameDate = dt.ToString("yyyy-MM-dd");
             string gameHour = dt.ToString("HH");
@@ -112,7 +111,7 @@ namespace LSportsServer
                 sql = $"insert into tb_child(sport_name, league_sn, home_team, away_team, gameDate, gameHour, gameTime, kubun, type, special, game_code, game_th, notice) values ('기타', '{leagueSn}', '{homeTeam}', '{awayTeam}', '{gameDate}', '{gameHour}', '{gameTime}', '0', '1', '{specialCode}', '{gameCode}', '{btGameTh}', '{strLeagueName}');";
                 int childSn = (int)CMySql.ExcuteQuery(sql);
 
-                sql = $"insert into tb_subchild(child_sn, betting_type, home_rate, draw_rate, away_rate) values('{childSn}','1','{info.homeRate}','{info.drawRate}','{info.awayRate}')";
+                sql = $"insert into tb_subchild(child_sn, betting_type, home_rate, draw_rate, away_rate) values ('{childSn}','1','{info.homeRate}','{info.drawRate}','{info.awayRate}')";
                 CMySql.ExcuteQuery(sql);
             }
 
@@ -158,6 +157,35 @@ namespace LSportsServer
                 ReturnPacket(nRetCode, $"적중금액은 최대 ${maxBnsMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
                 return;
             }
+
+            int sumBetMoney = 0;    // 미니게임 한개 회차에서 한 메뉴에 배팅한 총 금액
+            sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_betting.member_sn = '{nUser}'";
+            DataRowCollection rowList = CMySql.GetDataQuery(sql);
+            if (rowList.Count > 0)
+            {
+                sumBetMoney = CGlobal.ParseInt(rowList[0]["sumBetMoney"]);
+            }
+
+            if((btMoney + sumBetMoney) > maxBetMoney)
+            {
+                ReturnPacket(nRetCode, $"한 회차 한 메뉴 배팅금액은 최대 ${maxBetMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
+                return;
+            }
+
+            int sumResultMoney = 0;    // 미니게임 한개 회차에 한 메뉴에 당첨한 총 금액
+            sql = $"SELECT IFNULL(SUM(tb_total_cart.result_money), 0) AS sumResultMoney FROM tb_total_cart LEFT JOIN tb_total_betting ON tb_total_cart.betting_no = tb_total_betting.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_cart.member_sn = '{nUser}'";
+            rowList = CMySql.GetDataQuery(sql);
+            if (rowList.Count > 0)
+            {
+                sumResultMoney = CGlobal.ParseInt(rowList[0]["sumResultMoney"]);
+            }
+
+            if ((bettingBonusMoney + sumResultMoney) > maxBnsMoney)
+            {
+                ReturnPacket(nRetCode, $"한 회차 한 메뉴 적중금액은 최대 ${maxBnsMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
+                return;
+            }
+
             //-> 구매코드생성
             sql = "SELECT MAX(sn) AS last_sn FROM tb_total_cart";
             DataRowCollection lstTemp = CMySql.GetDataQuery(sql);
@@ -176,7 +204,7 @@ namespace LSportsServer
 			double away_rate = Convert.ToDouble(gameInfo["away_rate"]);
 			double draw_rate = Convert.ToDouble(gameInfo["draw_rate"]);
 
-            sql = $"INSERT INTO tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money) VALUES({subChildSn}, {nUser}, '{protoId}', {selectTeam}, {home_rate}, {draw_rate}, {away_rate}, {btRateTotal}, 1, 0, 0, 'Y', {btMoney})";
+            sql = $"INSERT INTO tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,mini_game_code) VALUES({subChildSn}, {nUser}, '{protoId}', {selectTeam}, {home_rate}, {draw_rate}, {away_rate}, {btRateTotal}, 1, 0, 0, 'Y', {btMoney}, '{gameType}')";
             CMySql.ExcuteQuery(sql);
 
             int user_recommend_sn = CGlobal.ParseInt(userInfo["recommend_sn"]);
@@ -199,16 +227,16 @@ namespace LSportsServer
             {
                 sql = $"insert into tb_money_log(member_sn,amount,before_money,after_money,regdate,state, status_message, log_memo) values({nUser}, {btMoney}, {before}, {after}, now(), 3, '배팅', '')";
                 CMySql.ExcuteQuery(sql);
-            }
 
-            //-> 배팅 알람 업데이트.
-            if (btMoney >= 300000)
-            {
-                sql = $"update tb_alarm_flag set betting_{btGameName}_big = betting_{btGameName}_big + 1 where idx = 1";
-            }
-            else
-            {
-                sql = $"update tb_alarm_flag set betting_{btGameName} = betting_{btGameName} + 1 where idx = 1";
+                //-> 배팅 알람 업데이트.
+                if (btMoney >= 300000)
+                {
+                    sql = $"update tb_alarm_flag set betting_{btGameName}_big = betting_{btGameName}_big + 1 where idx = 1";
+                }
+                else
+                {
+                    sql = $"update tb_alarm_flag set betting_{btGameName} = betting_{btGameName} + 1 where idx = 1";
+                }
             }
 
             CMySql.ExcuteQuery(sql);
