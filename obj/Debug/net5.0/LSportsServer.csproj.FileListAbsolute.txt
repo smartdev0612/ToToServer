@@ -108,3 +108,4 @@ C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\LSportsSe
 C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\ref\LSportsServer.dll
 C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\LSportsServer.pdb
 C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\LSportsServer.genruntimeconfig.cache
+C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\LSportsServer.csproj.AssemblyReference.cache

@@ -712,11 +712,17 @@ namespace LSportsServer
                     //-> 배팅 알람 업데이트.
                     if (betting >= 300000)
                     {
-                        sql = $"update tb_alarm_flag set betting_sport_big = betting_sport_big + 1 where idx = 1";
+                        if (_gameType == "live")
+                            sql = $"update tb_alarm_flag set betting_live_big = betting_live_big + 1 where idx = 1";
+                        else
+                            sql = $"update tb_alarm_flag set betting_sport_big = betting_sport_big + 1 where idx = 1";
                     }
                     else
                     {
-                        sql = $"update tb_alarm_flag set betting_sport = betting_sport + 1 where idx = 1";
+                        if (_gameType == "live")
+                            sql = $"update tb_alarm_flag set betting_live = betting_live + 1 where idx = 1";
+                        else
+                            sql = $"update tb_alarm_flag set betting_sport = betting_sport + 1 where idx = 1";
                     }
 
                     CMySql.ExcuteQuery(sql);
