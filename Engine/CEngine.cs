@@ -426,79 +426,71 @@ namespace LSportsServer
                         long before_money_top = Convert.ToInt64(info["rec_money"]);
                         long after_money_top = Convert.ToInt64(info["rec_money"]) + sum_tex_money_top;
 
-                        if (sum_tex_money_top > 0)
-                        {
-                            //-> 부본사 머니 업데이트
-                            sql = $"update tb_recommend set rec_money = {after_money_top} where Idx = {recommendSn_top}";
-                            CMySql.ExcuteQuery(sql);
+                        //-> 부본사 정산로그 [get_tex_money, texdate] Update
+                        sql = $"update tb_recommend_tex set get_tex_money_top = '{sum_tex_money_top}', texdate = '{strFromTime}', is_checked_top = 1, confirm_date_top = '{strToTime}' where idx = {tex_log_idx}";
+                        CMySql.ExcuteQuery(sql);
 
-                            //-> 정산로그 [get_tex_money, texdate] Update
-                            sql = $"update tb_recommend_tex set get_tex_money_top = '{sum_tex_money_top}', texdate = '{strFromTime}', is_checked_top = 1, confirm_date_top = '{strToTime}' where idx = {tex_log_idx}";
-                            CMySql.ExcuteQuery(sql);
+                        //-> 부본사 미정산 내역들을 모두 정산됨으로 Update
+                        sql = $"update tb_recommend_tex set is_checked_top = 1, confirm_date_top = '{strToTime}' where is_checked_top = 0 AND rec_sn_top = '{recommendSn_top}'";
+                        CMySql.ExcuteQuery(sql);
 
-                            //-> 부본사 머니 로그 Insert
-                            sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) ";
-                            sql += $"VALUES('{recommendSn_top}', '{sum_tex_money_top}', '{before_money_top}', '{after_money_top}', '9', '부본사 정산금 입금', '1', '1', '{strFromTime}', '{strFromTime}')";
-                            CMySql.ExcuteQuery(sql);
+                        //-> 부본사 머니 업데이트
+                        sql = $"update tb_recommend set rec_money = {after_money_top} where Idx = {recommendSn_top}";
+                        CMySql.ExcuteQuery(sql);
 
-                            //-> 부본사 미정산 내역들을 모두 정산됨으로 Update
-                            sql = $"update tb_recommend_tex set is_checked_top = 1, confirm_date_top = '{strToTime}' where is_checked_top = 0 AND rec_sn_top = '{recommendSn_top}'";
-                            CMySql.ExcuteQuery(sql);
-                        }
+                        //-> 부본사 머니 로그 Insert
+                        sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) ";
+                        sql += $"VALUES('{recommendSn_top}', '{sum_tex_money_top}', '{before_money_top}', '{after_money_top}', '9', '부본사 정산금 입금', '1', '1', '{strFromTime}', '{strFromTime}')";
+                        CMySql.ExcuteQuery(sql);
+
+                        //-> 총판 정산로그 [get_tex_money, texdate] Update
+                        sql = $"update tb_recommend_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
+                        CMySql.ExcuteQuery(sql);
+
+                        //-> 총판 미정산 내역들을 모두 정산됨으로 Update
+                        sql = $"update tb_recommend_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
+                        CMySql.ExcuteQuery(sql);
 
                         //-> 현재 총판 머니
-                        if (sum_tex_money > 0)
-                        {
-                            sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
-                            info = CMySql.GetDataQuery(sql)[0];
-                            long before_money = Convert.ToInt64(info["rec_money"]);
-                            long after_money = before_money + sum_tex_money;
+                        sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
+                        info = CMySql.GetDataQuery(sql)[0];
+                        long before_money = Convert.ToInt64(info["rec_money"]);
+                        long after_money = before_money + sum_tex_money;
 
-                            //-> 총판 머니 업데이트
-                            sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
-                            CMySql.ExcuteQuery(sql);
+                        //-> 총판 머니 업데이트
+                        sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
+                        CMySql.ExcuteQuery(sql);
 
-                            //-> 정산로그 [get_tex_money, texdate] Update
-                            sql = $"update tb_recommend_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
-                            CMySql.ExcuteQuery(sql);
-
-                            //-> 총판 머니 로그 Insert
-                            sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
-                            sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
-                            CMySql.ExcuteQuery(sql);
-
-                            //-> 총판 미정산 내역들을 모두 정산됨으로 Update
-                            sql = $"update tb_recommend_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
-                            CMySql.ExcuteQuery(sql);
-                        }
+                        //-> 총판 머니 로그 Insert
+                        sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
+                        sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
+                        CMySql.ExcuteQuery(sql);
                     }
                     else // 총판에 상위부본사가 없는 경우 총판만 정산.
                     {
+
+                        //-> 정산로그 [get_tex_money, texdate] Update
+                        sql = $"update tb_recommend_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
+                        CMySql.ExcuteQuery(sql);
+
+                        //-> 총판 미정산 내역들을 모두 정산됨으로 Update
+                        sql = $"update tb_recommend_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
+                        CMySql.ExcuteQuery(sql);
+
                         //-> 현재 총판 머니
-                        if (tex_money > 0)
-                        {
-                            sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
-                            DataRow info = CMySql.GetDataQuery(sql)[0];
-                            long before_money = Convert.ToInt64(info["rec_money"]);
-                            long after_money = before_money + sum_tex_money;
+                        sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
+                        DataRow info = CMySql.GetDataQuery(sql)[0];
+                        long before_money = Convert.ToInt64(info["rec_money"]);
+                        long after_money = before_money + sum_tex_money;
 
-                            //-> 총판 머니 업데이트
-                            sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
-                            CMySql.ExcuteQuery(sql);
+                        //-> 총판 머니 업데이트
+                        sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
+                        CMySql.ExcuteQuery(sql);
 
-                            //-> 정산로그 [get_tex_money, texdate] Update
-                            sql = $"update tb_recommend_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
-                            CMySql.ExcuteQuery(sql);
-
-                            //-> 총판 머니 로그 Insert
-                            sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
-                            sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
-                            CMySql.ExcuteQuery(sql);
-
-                            //-> 총판 미정산 내역들을 모두 정산됨으로 Update
-                            sql = $"update tb_recommend_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
-                            CMySql.ExcuteQuery(sql);
-                        }
+                        //-> 총판 머니 로그 Insert
+                        sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
+                        sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
+                        CMySql.ExcuteQuery(sql);
                     }
                 }
             }
@@ -510,6 +502,9 @@ namespace LSportsServer
             DateTime preTime = nowTime.AddDays(-7);
             string strPreDate = preTime.ToString("yyyy-MM-dd");
 
+            DateTime yesterdayTime = nowTime.AddDays(-1);
+            string strYesterday = yesterdayTime.ToString("yyyy-MM-dd");
+
             string sql = $"SELECT * FROM tb_child WHERE status > 2 AND gameDate < '{strPreDate}'";
             DataRowCollection list = CMySql.GetDataQuery(sql);
             Console.WriteLine(list.Count);
@@ -517,6 +512,7 @@ namespace LSportsServer
             string strDeleteChild = $"DELETE FROM tb_child WHERE sn = 0";
             string strDeleteSubChild = $"DELETE FROM tb_subchild WHERE child_sn = 0";
             string strDeleteScore = $"DELETE FROM tb_score WHERE game_sn = 0";
+
             
             if (list.Count > 0)
             {
@@ -548,6 +544,9 @@ namespace LSportsServer
             CMySql.ExcuteQuery(sql);
 
             sql = $"DELETE FROM tb_total_cart WHERE bet_date < '{strPreDate} 00:00:00'";
+            CMySql.ExcuteQuery(sql);
+
+            sql = $"DELETE FROM tb_score WHERE strTime < '{ strYesterday } 00:00:00'";
             CMySql.ExcuteQuery(sql);
         }
 

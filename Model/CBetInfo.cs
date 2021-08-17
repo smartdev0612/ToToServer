@@ -49,11 +49,12 @@ namespace LSportsServer
                 }
                 else if (prop.Name == "Status")
                 {
-                    int nStatus = CGlobal.ParseInt(prop.Value);
+                    m_nStatus = CGlobal.ParseInt(prop.Value);
+                    /*int nStatus = CGlobal.ParseInt(prop.Value);
                     if (nStatus == 9)
                         nStatus = 1;
                     if (nStatus > m_nStatus)
-                        m_nStatus = nStatus;
+                        m_nStatus = nStatus;*/
                 }
                 else if (prop.Name == "Settlement")
                 {

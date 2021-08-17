@@ -56,12 +56,37 @@ namespace LSportsServer
             m_nResult = CGlobal.ParseInt(info["result"]);
         }
 
-        public bool CheckWinDrawLose()
+        public bool CheckWinDrawLose(int nSports)
         {
-            if (m_nMarket == 1 || m_nMarket == 52 || m_nMarket == 226)
-                return true;
-            else
-                return false;
+            bool isWinLose = false;
+            switch(nSports)
+            {
+                case 6046: // 축구
+                    if (m_nMarket == 1)
+                        isWinLose = true;
+                    break;
+                case 48242: // 농구
+                    if (m_nMarket == 226)
+                        isWinLose = true;
+                    break;
+                case 154830: // 배구
+                    if (m_nMarket == 52)
+                        isWinLose = true;
+                    break;
+                case 154914: // 야구
+                    if (m_nMarket == 226)
+                        isWinLose = true;
+                    break;
+                case 35232: // 아이스 하키
+                    if (m_nMarket == 226)
+                        isWinLose = true;
+                    break;
+                case 687890: // E스포츠
+                    if (m_nMarket == 52)
+                        isWinLose = true;
+                    break;
+            }
+            return isWinLose;
         }
 
         public void CopyObject(CBetRate clsRate)
@@ -287,7 +312,7 @@ namespace LSportsServer
             CEntry.SaveBetRateInfoToDB(this);
 
 
-            if (m_nMarket == 3 || m_nMarket == 342 || m_nMarket == 866)
+            if (m_nMarket == 3 || m_nMarket == 342 || m_nMarket == 1558)
             {
                 //핸디캡일때 처리
                 string[] lststrWinTeam = { "Home", "Away", "Draw", "Cancel" };

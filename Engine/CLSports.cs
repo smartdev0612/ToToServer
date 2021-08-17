@@ -19,15 +19,9 @@ namespace LSportsServer
 
         public static void Connect()
         {
-            //m_wsData = new WebSocket($"ws://{CDefine.ADDR_SEVER}:{CDefine.SOCKET_DATA}");
-            //m_wsData.OnOpen += Data_OnOpen;
-            //m_wsData.OnError += Prematch_OnError;
-            //m_wsData.OnClose += Prematch_OnClose;
-            //m_wsData.OnMessage += Data_OnMessage;
-
-            //m_wsData.Connect();
-            //new Thread(() => StartThread(CDefine.LSPORTS_DATA)).Start();
-
+            // API로부터 리그정보로드 
+            // CLeague clsLeague = new CLeague();
+            // clsLeague.SaveLeagueInfo(687890);
 
             /*use*/
             if (CDefine.USE_PREMATCH == "yes")
@@ -196,19 +190,20 @@ namespace LSportsServer
                 switch (nType)
                 {
                     case 1:
-                        CGlobal.ShowConsole("GameFixture");
+                        // CGlobal.ShowConsole("GameFixture");
+                        // CGlobal.WriteLogAsync(strPacket);
                         GameFixture(objBody, nFlag);
                         break;
                     case 2:
-                        CGlobal.ShowConsole("GameScore");
+                        // CGlobal.ShowConsole("GameScore");
                         GameScore(objBody, nFlag);
                         break;
                     case 3:
-                        CGlobal.ShowConsole("GameMarket");
+                        // CGlobal.ShowConsole("GameMarket");
                         GameMarket(objBody, nFlag);
                         break;
                     case 35:
-                        CGlobal.ShowConsole("GameResult");
+                        // CGlobal.ShowConsole("GameResult");
                         GameResult(objBody, nFlag);
                         break;
                 }
@@ -286,7 +281,8 @@ namespace LSportsServer
                     return;
                 }
                 List<JToken> lstMarket = objEvent["Markets"].ToList();
-                clsGame.UpdateMarket(lstMarket, nLive);
+                int nSports = clsGame.m_nSports;
+                clsGame.UpdateMarket(lstMarket, nSports, nLive);
                 
                 if(nLive == 2)
                 {
@@ -295,7 +291,7 @@ namespace LSportsServer
                     strLog += JsonConvert.SerializeObject(lstMarket) + "\n";
                     strLog += "---------------------------------------------------------------------------";
 
-                    //CGlobal.WriteLogAsync(strLog);
+                    // CGlobal.WriteLogAsync(strLog);
                 }
             }
         }
@@ -328,7 +324,7 @@ namespace LSportsServer
 
                 foreach(JToken objMarket in lstMarket)
                 {
-                    clsGame.UpdateResult(objMarket);
+                    clsGame.UpdateResult(objMarket, clsGame.m_nSports, nLive);
                 }
             }
         }
@@ -411,7 +407,8 @@ namespace LSportsServer
         {
             while(true)
             {
-                List<CGame> lstGame = CGlobal.GetGameList().FindAll(value => value.CheckLive());
+                List<CGame> lstSubGame = CGlobal.GetGameList();
+                List<CGame> lstGame = lstSubGame.FindAll(value => value.CheckLive());
                 foreach(CGame clsGame in lstGame)
                 {
                     GetInPlayInfoFromApi(clsGame.m_nFixtureID);
@@ -523,7 +520,7 @@ namespace LSportsServer
                     JToken objScore = objBody;
 
                     clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket);
+                    clsGame.UpdateMarket(lstMarket, clsGame.m_nSports, 4);
                     clsGame.UpdateScore(objScore);
 
                     Thread.Sleep(200);
@@ -588,7 +585,7 @@ namespace LSportsServer
                     }
 
                     clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, 3);
+                    clsGame.UpdateMarket(lstMarket, clsGame.m_nSports, 3);
                     clsGame.UpdateScore(objScore);
 
                     Thread.Sleep(200);

@@ -63,6 +63,12 @@ namespace LSportsServer
         public string m_strName;
         public string m_strImg;
         public int m_nCount;
+        public int m_nPriorityFoot;
+        public int m_nPriorityBasket;
+        public int m_nPriorityBase;
+        public int m_nPriorityVolley;
+        public int m_nPriorityHocky;
+        public int m_nPriorityEsports;
 
         public List<CLSportsLeagueCnt> m_lstLeagueCnt;
     }

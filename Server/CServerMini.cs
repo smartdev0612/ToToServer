@@ -17,14 +17,32 @@ namespace LSportsServer
             string btGameName = Convert.ToString(packet["btGameName"]);			            //-> 배팅게임종류
 		    int btMoney = CGlobal.ParseInt(packet["btMoney"]);				                //-> 배팅금액
 		    string btGameTypeList = Convert.ToString(packet["btGameType"]);	                //-> 배팅게임타입
-            
+
+            DateTime dateTime = CMyTime.GetMyTime();
+            string today = dateTime.ToString("yyyy-MM-dd");
+            DateTime powerRepairStartTime = CMyTime.ConvertStrToTime($"{today} 00:00:00");
+            DateTime powerRepairEndTime = CMyTime.ConvertStrToTime($"{today} 06:00:00");
+            int result = DateTime.Compare(dateTime, powerRepairStartTime);
+            int result1 = DateTime.Compare(dateTime, powerRepairEndTime);
+
             int btGameTh = 0;
             if (btGameName == "powerball")
             {
+                if(result > 0 && result1 < 0)
+                {
+                    ReturnPacket(nRetCode, "현재 파워볼은 점검중입니다.", 1);
+                    return;
+                }
+
                 btGameTh = CPowerball.GetGameTh();                                         //-> 배팅게임회차
             }
             else if(btGameName == "powersadari")
             {
+                if (result > 0 && result1 < 0)
+                {
+                    ReturnPacket(nRetCode, "현재 파워사다리는 점검중입니다.", 1);
+                    return;
+                }
                 btGameTh = CPowerladder.GetGameTh();                                         //-> 배팅게임회차
             }
 
@@ -159,7 +177,7 @@ namespace LSportsServer
             }
 
             int sumBetMoney = 0;    // 미니게임 한개 회차에서 한 메뉴에 배팅한 총 금액
-            sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_betting.member_sn = '{nUser}'";
+            sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_betting.member_sn = '{nUser}'";
             DataRowCollection rowList = CMySql.GetDataQuery(sql);
             if (rowList.Count > 0)
             {
@@ -219,7 +237,7 @@ namespace LSportsServer
 
             string mem_status = Convert.ToString(userInfo["mem_status"]);
             int before = CGlobal.ParseInt(userInfo["g_money"]);
-            int after = before + btMoney;
+            int after = before - btMoney;
             sql = $"update tb_member set g_money = g_money - {btMoney} where sn = {nUser}";
             CMySql.ExcuteQuery(sql);
 
@@ -237,9 +255,8 @@ namespace LSportsServer
                 {
                     sql = $"update tb_alarm_flag set betting_{btGameName} = betting_{btGameName} + 1 where idx = 1";
                 }
+                CMySql.ExcuteQuery(sql);
             }
-
-            CMySql.ExcuteQuery(sql);
 
             ReturnPacket(CDefine.PACKET_SPORT_BET, "배팅신청이 완료되었습니다.", 0);
         }

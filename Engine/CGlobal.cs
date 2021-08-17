@@ -43,7 +43,7 @@ namespace LSportsServer
             LoadInfoFromDB();
 
             CLSports.Connect();
-            CPowerball.StartPowerball();
+            //CPowerball.StartPowerball();
             CEngine.StartRealProcess();
             CServer.Start();
         }
@@ -225,7 +225,14 @@ namespace LSportsServer
             packet.m_strPacket = strPacket;
             
             if (_wsServer != null)
+            {
                 _wsServer.BroadCastPacket(packet);
+                CGlobal.ShowConsole("Send Mini Time");
+            }
+            else
+            {
+                CGlobal.ShowConsole("Websocket Null");
+            }
         }
 
         public static int ParseInt<T>(T value)

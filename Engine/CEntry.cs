@@ -151,7 +151,7 @@ namespace LSportsServer
 
         public static void SaveScoreInfoToDB(MScore model)
         {
-            string sql = $"INSERT INTO tb_score(game_sn, period, home_score, away_score, isFinished, isConfirmed) VALUES({model.m_nFixtureID}, {model.m_nPeriod}, {model.m_nHomeScore}, {model.m_nAwayScore}, {model.m_nIsFinished}, {model.m_nIsConfirmed})";
+            string sql = $"INSERT INTO tb_score(game_sn, period, home_score, away_score, isFinished, isConfirmed, strTime) VALUES({model.m_nFixtureID}, {model.m_nPeriod}, {model.m_nHomeScore}, {model.m_nAwayScore}, {model.m_nIsFinished}, {model.m_nIsConfirmed}, '{CMyTime.GetMyTimeStr()}')";
             CMySql.ExcuteQuery(sql);
         }
 
@@ -165,6 +165,27 @@ namespace LSportsServer
         {
             string sql = $"UPDATE tb_child SET home_score = {model.m_nHomeScore}, away_score = {model.m_nAwayScore}, game_period = {model.m_nPeriod} WHERE sn = {model.m_nCode}";
             CMySql.ExcuteQuery(sql);
+        }
+
+        public static void SaveLeagueToDB(long nLeagueId, string strName, long nLocationId, long nSportId)
+        {
+            string sql = $"SELECT sn FROM tb_league WHERE lsports_league_sn = '{nLeagueId}'";
+            DataRowCollection list = CMySql.GetDataQuery(sql);
+            if (list.Count == 0)
+            {
+                sql = $"SELECT name FROM tb_sports WHERE sn = '{nSportId}'";
+                DataRowCollection sports = CMySql.GetDataQuery(sql);
+                string kind = "";
+                if (sports.Count > 0)
+                    kind = Convert.ToString(sports[0]["name"]);
+
+                string strLeagueImg = $"/upload/league/{nLocationId}.png";
+                strName = strName.Replace("'", " ");
+
+                sql = $"INSERT INTO tb_league(sn, lsports_league_sn, nation_sn, sport_sn, kind, name, name_en, alias_name, lg_img) VALUES ({nLeagueId}, {nLeagueId}, {nLocationId}, {nSportId}, '{kind}', '{strName}', '{strName}', '{strName}', '{strLeagueImg}')";
+
+                CMySql.ExcuteQuery(sql);
+            }
         }
     }
 }

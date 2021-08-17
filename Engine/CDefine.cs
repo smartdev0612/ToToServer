@@ -31,6 +31,13 @@ namespace LSportsServer
 
         public static string POWER_SERVER;
 
+        public static string API_URL;
+        public static string API_USERNAME;
+        public static string API_PASSWORD;
+        public static string API_GUID;
+        public static string API_PREMATCH_PACKAGE_ID;
+        public static string API_INPLAY_PACKAGE_ID;
+
         public const int LSPORTS_DATA = 0x00;
         public const int LSPORTS_PREMATCH = 0x01;
         public const int LSPORTS_LIVE = 0x02;
@@ -41,7 +48,7 @@ namespace LSportsServer
         public const int LSPORTS_SPORTS_BASEBALL = 154914;
         public const int LSPORTS_SPORTS_VOLLEYBALL = 154830;
         public const int LSPORTS_SPORTS_HOCKEY = 35232;
-        
+        public const int LSPORTS_SPORTS_ESPORTS = 687890;
 
 
 
@@ -75,6 +82,12 @@ namespace LSportsServer
                 CDefine.DB_PORT = node.SelectSingleNode("db_port").InnerText;
                 CDefine.DB_USER = node.SelectSingleNode("db_user").InnerText;
                 CDefine.DB_PASS = node.SelectSingleNode("db_pass").InnerText;
+                CDefine.API_URL = node.SelectSingleNode("api_url").InnerText;
+                CDefine.API_USERNAME = node.SelectSingleNode("api_username").InnerText;
+                CDefine.API_PASSWORD = node.SelectSingleNode("api_password").InnerText;
+                CDefine.API_GUID = node.SelectSingleNode("api_guid").InnerText;
+                CDefine.API_PREMATCH_PACKAGE_ID = node.SelectSingleNode("api_prematch_package_id").InnerText;
+                CDefine.API_INPLAY_PACKAGE_ID = node.SelectSingleNode("api_live_package_id").InnerText;
                 CDefine.SOCKET_PREMATCH = node.SelectSingleNode("socket_prematch").InnerText;
                 CDefine.SOCKET_LIVE = node.SelectSingleNode("socket_live").InnerText;
                 CDefine.SOCKET_DATA = node.SelectSingleNode("socket_data").InnerText;

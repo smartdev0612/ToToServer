@@ -910,7 +910,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "C:\\Users\\Administrator\\Documents\\Server\\LSportsServer\\LSportsServer.csproj",
-      "projectName": "LSportsServer",
+      "projectName": "Sports",
       "projectPath": "C:\\Users\\Administrator\\Documents\\Server\\LSportsServer\\LSportsServer.csproj",
       "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\Administrator\\Documents\\Server\\LSportsServer\\obj\\",

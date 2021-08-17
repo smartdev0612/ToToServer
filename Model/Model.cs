@@ -21,6 +21,12 @@ namespace LSportsServer
         public string m_strKo;
         public string m_strImg;
         public int m_nUse;
+        public int m_nPriorityFoot;
+        public int m_nPriorityBasket;
+        public int m_nPriorityBase;
+        public int m_nPriorityVolley;
+        public int m_nPriorityHocky;
+        public int m_nPriorityEsports;
     }
 
     public class MLeague : MBase

@@ -39,7 +39,7 @@ namespace LSportsServer
         }
         private static void Ws_OnError(object sender, ErrorEventArgs e)
         {
-            (sender as WebSocket).Close();
+            (sender as WebSocket).Connect();
         }
         private static void Ws_OnClose(object sender, CloseEventArgs e)
         {
@@ -48,13 +48,39 @@ namespace LSportsServer
         private static void Ws_OnMessage(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data;
-            string[] arrPacket = strPacket.Split(',');
+            DateTime dtNow = CMyTime.GetMyTime();
+            string[] arrPacket = strPacket.Split('|');
 
             List<string> packet = new List<string>();
-            for(int i = 20; i < 30; i++)
-            {
-                packet.Add(arrPacket[i]);
-            }
+            packet.Add(arrPacket[0]);
+
+            //당일회차
+            string strBaseTime = dtNow.ToString("yyyy-MM-dd") + " 00:00:00";
+            DateTime dtBaseTime = CMyTime.ConvertStrToTime(strBaseTime);
+            TimeSpan spTime = dtNow - dtBaseTime;
+            int nDNum = CGlobal.ParseInt(Math.Floor(spTime.TotalSeconds + 30) / 300);
+            if (nDNum > 288)
+                nDNum = 288;
+            packet.Add(nDNum.ToString());
+
+            int nRT = 300 - (CGlobal.ParseInt((spTime.TotalSeconds + 30) % 300));
+            packet.Add(nRT.ToString());
+
+            int nBall0 = CGlobal.ParseInt(arrPacket[1]); 
+            int nBall1 = CGlobal.ParseInt(arrPacket[2]); 
+            int nBall2 = CGlobal.ParseInt(arrPacket[3]); 
+            int nBall3 = CGlobal.ParseInt(arrPacket[4]); 
+            int nBall4 = CGlobal.ParseInt(arrPacket[5]); 
+            int nPow = CGlobal.ParseInt(arrPacket[6]);
+            int nSum = nBall0 + nBall1 + nBall2 + nBall3 + nBall4;
+
+            packet.Add(nSum.ToString());
+            packet.Add(nPow.ToString());
+            packet.Add(nBall0.ToString());
+            packet.Add(nBall1.ToString());
+            packet.Add(nBall2.ToString());
+            packet.Add(nBall3.ToString());
+            packet.Add(nBall4.ToString());
 
             if (CDefine.USE_POWERLADDER == "yes")
             {
@@ -63,6 +89,7 @@ namespace LSportsServer
 
             if (CDefine.USE_POWERBALL != "yes")
                 return;
+
 
             int nGnum = CGlobal.ParseInt(packet[0]) + 1;
             m_nGameTime = CGlobal.ParseInt(packet[2]);

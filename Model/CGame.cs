@@ -75,7 +75,7 @@ namespace LSportsServer
 
         public bool IsFinishGame()
         {
-            if (m_nStatus == 3 || m_nStatus == 4 || m_nStatus == 7)
+            if (m_nStatus == 3 || m_nStatus == 4 || m_nStatus == 5 || m_nStatus == 6 || m_nStatus == 7)
             {
                 return true;
             }
@@ -104,17 +104,17 @@ namespace LSportsServer
                 CEntry.SaveGameInfoToDB(this);
             }
 
-            if (this.m_nStatus < 2)
+            /*if (this.m_nStatus < 2)
             {
                 this.m_nStatus = 2;
-            }
+            }*/
 
-            CBetRate clsLiveRate = m_lstLiveBetRate.Find(value => value.CheckWinDrawLose());
+            CBetRate clsLiveRate = m_lstLiveBetRate.Find(value => value.CheckWinDrawLose(this.m_nSports));
             if(clsLiveRate == null)
             {
                 //라이브상태일때 승무패가 없다면 프리매치배당을 복사해주어야 한다.
                 clsLiveRate = new CBetRate(this);
-                CBetRate clsPreRate = m_lstLiveBetRate.Find(value => value.CheckWinDrawLose());
+                CBetRate clsPreRate = m_lstLiveBetRate.Find(value => value.CheckWinDrawLose(this.m_nSports));
                 if(clsPreRate != null)
                 {
                     clsLiveRate.CopyObject(clsPreRate);
@@ -125,7 +125,7 @@ namespace LSportsServer
             if(clsLiveRate.m_nLive < 2)
             {
                 clsLiveRate.m_nLive = 2;
-                clsLiveRate.m_nStatus = 2;
+                // clsLiveRate.m_nStatus = 2;
             }
                 
         }
@@ -156,7 +156,7 @@ namespace LSportsServer
         {
             if(m_nLive == 0)
             {
-                m_nLive = 1;
+                m_nLive = 0;
                 return $" or game_sn = '{this.m_nFixtureID}'";
             }
             else
@@ -366,6 +366,7 @@ namespace LSportsServer
                 if (scoreInfo == null)
                 {
                     scoreInfo = new CScore(m_nFixtureID);
+                    scoreInfo.m_nPeriod = nPeriod;
                     m_lstScore.Add(scoreInfo);
                 }
 
@@ -387,32 +388,32 @@ namespace LSportsServer
             CheckFinishGame();
         }
 
-        public void UpdateMarket(List<JToken> lstMarket, int nLive = 0)
+        public void UpdateMarket(List<JToken> lstMarket, int nSports = 0, int nLive = 0)
         {
             foreach (JToken objMarket in lstMarket)
             {
                 int nMarketID = CGlobal.ParseInt(objMarket["Id"]);
                 if (CGlobal.CheckMarketID(nMarketID))
                 {
-                    UpdateBetRate(objMarket, nLive);
+                    UpdateBetRate(objMarket, nSports, nLive);
                 }
             }
 
             CheckFinishGame();
         }
 
-        public void UpdateResult(JToken objInfo)
+        public void UpdateResult(JToken objInfo, int nSports = 0, int nLive = 0)
         {
             int nMarketId = CGlobal.ParseInt(objInfo["Id"]);
             if (CGlobal.CheckMarketID(nMarketId))
             {
-                UpdateBetRate(objInfo);
+                UpdateBetRate(objInfo, nSports, nLive);
             }
 
             CheckFinishGame();
         }
 
-        private void UpdateBetRate(JToken objInfo, int nLive = 0)
+        private void UpdateBetRate(JToken objInfo, int nSports = 0, int nLive = 0)
         {
             if (m_bCheck == false)
                 return;
@@ -427,6 +428,14 @@ namespace LSportsServer
 
             foreach(JToken objProvider in lstProvider)
             {
+                int nProviderCnt = lstProvider.Count;
+                string strApi = Convert.ToString(objProvider["Name"]);
+                int nMarketID = CGlobal.ParseInt(objInfo["Id"]);
+                CMarket clsMarket = CGlobal.GetMarketInfoByCode(nMarketID);
+
+                if (nLive >= 2 && nSports == 154830 && strApi != "Bet365")
+                    continue;
+
                 if (objProvider["Bets"] == null || !objProvider["Bets"].HasValues)
                     continue;
 
@@ -442,11 +451,6 @@ namespace LSportsServer
                     lstBetInfo.Add(info);
                 }
 
-                int nProviderCnt = lstProvider.Count;
-                string strApi = Convert.ToString(objProvider["Name"]);
-                int nMarketID = CGlobal.ParseInt(objInfo["Id"]);
-                CMarket clsMarket = CGlobal.GetMarketInfoByCode(nMarketID);
-
                 switch (clsMarket.m_nFamily)
                 {
                     case 1: //승무패
@@ -459,6 +463,7 @@ namespace LSportsServer
                         this.ParsingUnderOver(lstBetInfo, strApi, nMarketID, nLive, nProviderCnt);
                         break;
                     case 8: //아시안핸디캡
+                    case 9:
                         this.ParsingAsianHandicap(lstBetInfo, strApi, nMarketID, nLive, nProviderCnt);
                         break;
                     case 10: //홀짝
@@ -478,35 +483,33 @@ namespace LSportsServer
         }
 
 
-        private CBetRate GetBetRateInfoByMarketID(int nMarketID, string strApi, int nLive)
+        private CBetRate GetPreRateInfoByMarketID(int nMarketID, string strApi)
         {
-            CBetRate clsBetRate = null;
-
-            if (nLive < 2)
+            CBetRate clsBetRate = m_lstPrematchBetRate.Find(value => value.m_nMarket == nMarketID);
+            if (clsBetRate == null)
             {
-                clsBetRate = m_lstPrematchBetRate.Find(value => value.m_nMarket == nMarketID);
-                if (clsBetRate == null)
-                {
-                    clsBetRate = new CBetRate(this);
-                    clsBetRate.m_nMarket = nMarketID;
-                    clsBetRate.m_strApi = strApi;
-                    m_lstPrematchBetRate.Add(clsBetRate);
-                }
+                clsBetRate = new CBetRate(this);
+                clsBetRate.m_nMarket = nMarketID;
+                clsBetRate.m_strApi = strApi;
+                m_lstPrematchBetRate.Add(clsBetRate);
             }
-            else
+
+            return clsBetRate;
+        }
+
+        private CBetRate GetLiveRateInfoByMarketID(int nMarketID, string strApi)
+        {
+            CBetRate clsBetRate = m_lstLiveBetRate.Find(value => value.m_nMarket == nMarketID);
+            if (clsBetRate == null)
             {
-                clsBetRate = m_lstLiveBetRate.Find(value => value.m_nMarket == nMarketID);
-                if (clsBetRate == null)
-                {
-                    clsBetRate = new CBetRate(this);
-                    clsBetRate.m_nMarket = nMarketID;
-                    clsBetRate.m_strApi = strApi;
-                    m_lstLiveBetRate.Add(clsBetRate);
-                }
-                if(clsBetRate.m_strApi == string.Empty)
-                {
-                    clsBetRate.m_strApi = strApi;
-                }
+                clsBetRate = new CBetRate(this);
+                clsBetRate.m_nMarket = nMarketID;
+                clsBetRate.m_strApi = strApi;
+                m_lstLiveBetRate.Add(clsBetRate);
+            }
+            if (clsBetRate.m_strApi == string.Empty)
+            {
+                clsBetRate.m_strApi = strApi;
             }
 
             return clsBetRate;
@@ -595,14 +598,23 @@ namespace LSportsServer
                 else if (info.m_strName == "X")
                     nIndex = 2;
 
-                CBetRate clsBetRate = GetBetRateInfoByMarketID(nMarketID, strApi, nLive);
-
-                if (clsBetRate.m_strApi != strApi)
+                if(nLive >= 2 && this.m_nLive == 2)
                 {
-                    continue;
+                    CBetRate liveRate = GetLiveRateInfoByMarketID(nMarketID, strApi);
+                    if (liveRate.m_strApi == strApi)
+                    {
+                        liveRate.UpdateInfo(nIndex, info, nLive);
+                    }
                 }
 
-                clsBetRate.UpdateInfo(nIndex, info, nLive);
+                if(nLive < 2 || nLive == 4)
+                {
+                    CBetRate clsBetRate = GetPreRateInfoByMarketID(nMarketID, strApi);
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(nIndex, info, 1);
+                    }
+                }
             }
         }
 
@@ -617,13 +629,23 @@ namespace LSportsServer
                 else if (info.m_strName == "2")
                     nIndex = 1;
 
-                CBetRate clsBetRate = GetBetRateInfoByMarketID(nMarketID, strApi, nLive);
-
-                if (clsBetRate.m_strApi != strApi)
+                if (nLive >= 2 && this.m_nLive == 2)
                 {
-                    continue;
+                    CBetRate liveRate = GetLiveRateInfoByMarketID(nMarketID, strApi);
+                    if (liveRate.m_strApi == strApi)
+                    {
+                        liveRate.UpdateInfo(nIndex, info, nLive);
+                    }
                 }
-                clsBetRate.UpdateInfo(nIndex, info, nLive);
+
+                if (nLive < 2 || nLive == 4)
+                {
+                    CBetRate clsBetRate = GetPreRateInfoByMarketID(nMarketID, strApi);
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(nIndex, info, 1);
+                    }
+                }
             }
         }
 
@@ -644,65 +666,119 @@ namespace LSportsServer
                     continue;
                 }
 
-                CBetRate clsBetRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, nLive);
-                
-                if (clsBetRate.m_strApi != strApi)
+
+                if(nLive < 4)
                 {
-                    continue;
-                }
+                    CBetRate clsBetRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, nLive);
 
-                int nIndex = -1;
-
-                if (info.m_strName == "Under")
-                {
-                    nIndex = 0;
-                    clsBetRate.m_strHLine = info.m_strLine;
-
-                    strTemp = clsBetRate.m_strHLine.Trim();
-                    clsBetRate.m_dOrder = Convert.ToDouble(strTemp);
-                }
-                else if (info.m_strName == "Over")
-                {
-                    nIndex = 1;
-                    clsBetRate.m_strALine = info.m_strLine;
-                }
-
-                clsBetRate.UpdateInfo(nIndex, info, nLive);
-
-                double nTScore = m_nHomeScore + m_nAwayScore;
-                if(m_nSports == CDefine.LSPORTS_SPORTS_SOCCER)
-                {
-                    if (nTScore >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                    if (clsBetRate.m_strApi != strApi)
                     {
-                        clsBetRate.m_nStatus = 2;
+                        continue;
                     }
-                }
-                else if(m_nSports == CDefine.LSPORTS_SPORTS_BASKETBALL)
-                {
-                    if (nTScore - 3 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+
+                    int nIndex = -1;
+
+                    if (info.m_strName == "Under")
                     {
-                        clsBetRate.m_nStatus = 2;
+                        nIndex = 0;
+                        clsBetRate.m_strHLine = info.m_strLine;
+
+                        strTemp = clsBetRate.m_strHLine.Trim();
+                        clsBetRate.m_dOrder = Convert.ToDouble(strTemp);
                     }
-                }
-                else if(m_nSports == CDefine.LSPORTS_SPORTS_BASEBALL)
-                {
-                    if (nTScore - 3 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                    else if (info.m_strName == "Over")
                     {
-                        clsBetRate.m_nStatus = 2;
+                        nIndex = 1;
+                        clsBetRate.m_strALine = info.m_strLine;
                     }
-                }
-                else if (m_nSports == CDefine.LSPORTS_SPORTS_VOLLEYBALL)
-                {
-                    if (nTScore - 3 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+
+                    clsBetRate.UpdateInfo(nIndex, info, nLive);
+
+
+                    double nTScore = m_nHomeScore + m_nAwayScore;
+                    if (m_nSports == CDefine.LSPORTS_SPORTS_SOCCER)
                     {
-                        clsBetRate.m_nStatus = 2;
+                        if (nTScore >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
                     }
-                }
-                else if (m_nSports == CDefine.LSPORTS_SPORTS_HOCKEY)
-                {
-                    if (nTScore - 1 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                    else if (m_nSports == CDefine.LSPORTS_SPORTS_BASKETBALL)
                     {
-                        clsBetRate.m_nStatus = 2;
+                        if (nTScore - 3 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
+                    }
+                    else if (m_nSports == CDefine.LSPORTS_SPORTS_BASEBALL)
+                    {
+                        if (nTScore - 3 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
+                    }
+                    else if (m_nSports == CDefine.LSPORTS_SPORTS_VOLLEYBALL)
+                    {
+                        if (nTScore - 3 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
+                    }
+                    else if (m_nSports == CDefine.LSPORTS_SPORTS_HOCKEY)
+                    {
+                        if (nTScore - 1 >= clsBetRate.m_dOrder && clsBetRate.m_nStatus < 2)
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
+                    }
+                } 
+                else
+                {
+                    if(this.m_nLive == 2)
+                    {
+                        CBetRate clsLiveRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, 2);
+                        if (clsLiveRate.m_strApi == strApi)
+                        {
+                            int nIndex = -1;
+
+                            if (info.m_strName == "Under")
+                            {
+                                nIndex = 0;
+                                clsLiveRate.m_strHLine = info.m_strLine;
+
+                                strTemp = clsLiveRate.m_strHLine.Trim();
+                                clsLiveRate.m_dOrder = Convert.ToDouble(strTemp);
+                            }
+                            else if (info.m_strName == "Over")
+                            {
+                                nIndex = 1;
+                                clsLiveRate.m_strALine = info.m_strLine;
+                            }
+
+                            clsLiveRate.UpdateInfo(nIndex, info, nLive);
+                        }
+                    }
+
+                    CBetRate clsPreRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, 1);
+                    if (clsPreRate.m_strApi == strApi)
+                    {
+                        int nIndex = -1;
+
+                        if (info.m_strName == "Under")
+                        {
+                            nIndex = 0;
+                            clsPreRate.m_strHLine = info.m_strLine;
+
+                            strTemp = clsPreRate.m_strHLine.Trim();
+                            clsPreRate.m_dOrder = Convert.ToDouble(strTemp);
+                        }
+                        else if (info.m_strName == "Over")
+                        {
+                            nIndex = 1;
+                            clsPreRate.m_strALine = info.m_strLine;
+                        }
+
+                        clsPreRate.UpdateInfo(nIndex, info, 1);
                     }
                 }
             }
@@ -725,33 +801,93 @@ namespace LSportsServer
                     continue;
                 }
 
-                CBetRate clsBetRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, nLive);
-
-                if (clsBetRate.m_strApi != strApi)
+                if(nLive < 4)
                 {
-                    continue;
+                    CBetRate clsBetRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, nLive);
+
+                    if (clsBetRate.m_strApi != strApi)
+                    {
+                        continue;
+                    }
+
+                    int nIndex = -1;
+
+                    if (info.m_strName == "1")
+                    {
+                        nIndex = 0;
+                        clsBetRate.m_strHLine = info.m_strLine;
+
+                        strTemp = clsBetRate.m_strHLine.Substring(0, 5);
+                        strTemp = strTemp.Replace("(", "");
+                        strTemp = strTemp.Replace(" ", "");
+                        strTemp = strTemp.Trim();
+
+                        clsBetRate.m_dOrder = Convert.ToDouble(strTemp);
+                    }
+                    else if (info.m_strName == "2")
+                    {
+                        nIndex = 1;
+                        clsBetRate.m_strALine = info.m_strLine;
+                    }
+                    clsBetRate.UpdateInfo(nIndex, info, nLive);
                 }
-
-                int nIndex = -1;
-
-                if (info.m_strName == "1")
+                else
                 {
-                    nIndex = 0;
-                    clsBetRate.m_strHLine = info.m_strLine;
+                    if (this.m_nLive == 2)
+                    {
+                        CBetRate clsLiveRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, 3);
 
-                    strTemp = clsBetRate.m_strHLine.Substring(0, 5);
-                    strTemp = strTemp.Replace("(", "");
-                    strTemp = strTemp.Replace(" ", "");
-                    strTemp = strTemp.Trim();
+                        if (clsLiveRate.m_strApi == strApi)
+                        {
+                            int nIndex = -1;
 
-                    clsBetRate.m_dOrder = Convert.ToDouble(strTemp);
+                            if (info.m_strName == "1")
+                            {
+                                nIndex = 0;
+                                clsLiveRate.m_strHLine = info.m_strLine;
+
+                                strTemp = clsLiveRate.m_strHLine.Substring(0, 5);
+                                strTemp = strTemp.Replace("(", "");
+                                strTemp = strTemp.Replace(" ", "");
+                                strTemp = strTemp.Trim();
+
+                                clsLiveRate.m_dOrder = Convert.ToDouble(strTemp);
+                            }
+                            else if (info.m_strName == "2")
+                            {
+                                nIndex = 1;
+                                clsLiveRate.m_strALine = info.m_strLine;
+                            }
+                            clsLiveRate.UpdateInfo(nIndex, info, nLive);
+                        }
+                    }
+
+                    CBetRate clsPreRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, 1);
+
+                    if (clsPreRate.m_strApi == strApi)
+                    {
+                        int nIndex = -1;
+
+                        if (info.m_strName == "1")
+                        {
+                            nIndex = 0;
+                            clsPreRate.m_strHLine = info.m_strLine;
+
+                            strTemp = clsPreRate.m_strHLine.Substring(0, 5);
+                            strTemp = strTemp.Replace("(", "");
+                            strTemp = strTemp.Replace(" ", "");
+                            strTemp = strTemp.Trim();
+
+                            clsPreRate.m_dOrder = Convert.ToDouble(strTemp);
+                        }
+                        else if (info.m_strName == "2")
+                        {
+                            nIndex = 1;
+                            clsPreRate.m_strALine = info.m_strLine;
+                        }
+                        clsPreRate.UpdateInfo(nIndex, info, 1);
+                    }
                 }
-                else if (info.m_strName == "2")
-                {
-                    nIndex = 1;
-                    clsBetRate.m_strALine = info.m_strLine;
-                }
-                clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
 
@@ -766,13 +902,23 @@ namespace LSportsServer
                 else if (info.m_strName == "Even")
                     nIndex = 1;
 
-                CBetRate clsBetRate = GetBetRateInfoByMarketID(nMarketID, strApi, nLive);
-
-                if (clsBetRate.m_strApi != strApi)
+                if (nLive >= 2 && this.m_nLive == 2)
                 {
-                    continue;
+                    CBetRate liveRate = GetLiveRateInfoByMarketID(nMarketID, strApi);
+                    if (liveRate.m_strApi == strApi)
+                    {
+                        liveRate.UpdateInfo(nIndex, info, nLive);
+                    }
                 }
-                clsBetRate.UpdateInfo(nIndex, info, nLive);
+
+                if (nLive < 2 || nLive == 4)
+                {
+                    CBetRate clsBetRate = GetPreRateInfoByMarketID(nMarketID, strApi);
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(nIndex, info, 1);
+                    }
+                }
             }
         }
 
@@ -781,26 +927,52 @@ namespace LSportsServer
         {
             foreach (CBetInfo info in lstBet)
             {
-                CBetRate clsBetRate = GetBetRateInfoByHBetID(nMarketID, info.m_strBetID, strApi, nLive);
-                
-                if (clsBetRate.m_strApi != strApi)
+                if (nLive >= 2 && this.m_nLive == 2)
                 {
-                    continue;
+                    CBetRate clsBetRate = GetBetRateInfoByHBetID(nMarketID, info.m_strBetID, strApi, 2);
+
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(0, info, nLive);
+
+                        string[] score = clsBetRate.m_strHName.Trim().Split('-');
+                        if (score.Length != 2)
+                            return;
+
+                        int nHomeScore = CGlobal.ParseInt(score[0]);
+                        int nAwayScore = CGlobal.ParseInt(score[1]);
+
+                        clsBetRate.m_dOrder = nHomeScore * 1000 + nAwayScore;
+
+                        if (clsBetRate.m_nStatus < 2 && (nHomeScore <= m_nHomeScore || nAwayScore <= m_nAwayScore))
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
+                    }
                 }
-                clsBetRate.UpdateInfo(0, info, nLive);
 
-                string[] score = clsBetRate.m_strHName.Trim().Split('-');
-                if (score.Length != 2)
-                    return;
-
-                int nHomeScore = CGlobal.ParseInt(score[0]);
-                int nAwayScore = CGlobal.ParseInt(score[1]);
-
-                clsBetRate.m_dOrder = nHomeScore * 1000 + nAwayScore;
-
-                if (clsBetRate.m_nStatus < 2 && (nHomeScore <= m_nHomeScore || nAwayScore <= m_nAwayScore))
+                if (nLive < 2 || nLive == 4)
                 {
-                    clsBetRate.m_nStatus = 2;
+                    CBetRate clsBetRate = GetBetRateInfoByHBetID(nMarketID, info.m_strBetID, strApi, 1);
+
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(0, info, 1);
+
+                        string[] score = clsBetRate.m_strHName.Trim().Split('-');
+                        if (score.Length != 2)
+                            return;
+
+                        int nHomeScore = CGlobal.ParseInt(score[0]);
+                        int nAwayScore = CGlobal.ParseInt(score[1]);
+
+                        clsBetRate.m_dOrder = nHomeScore * 1000 + nAwayScore;
+
+                        if (clsBetRate.m_nStatus < 2 && (nHomeScore <= m_nHomeScore || nAwayScore <= m_nAwayScore))
+                        {
+                            clsBetRate.m_nStatus = 2;
+                        }
+                    }
                 }
             }
         }
@@ -820,13 +992,23 @@ namespace LSportsServer
                 else if (strName == "12")
                     nIndex = 2;
 
-                CBetRate clsBetRate = GetBetRateInfoByMarketID(nMarketID, strApi, nLive);
-
-                if (clsBetRate.m_strApi != strApi)
+                if (nLive >= 2 && this.m_nLive == 2)
                 {
-                    continue;
+                    CBetRate liveRate = GetLiveRateInfoByMarketID(nMarketID, strApi);
+                    if (liveRate.m_strApi == strApi)
+                    {
+                        liveRate.UpdateInfo(nIndex, info, nLive);
+                    }
                 }
-                clsBetRate.UpdateInfo(nIndex, info, nLive);
+
+                if (nLive < 2 || nLive == 4)
+                {
+                    CBetRate clsBetRate = GetPreRateInfoByMarketID(nMarketID, strApi);
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(nIndex, info, 1);
+                    }
+                }
             }
         }
 
@@ -847,15 +1029,30 @@ namespace LSportsServer
                     continue;
                 }
 
-                CBetRate clsBetRate = GetBetRateInfoByHBetID(nMarketID, info.m_strBetID, strApi, nLive);
-                clsBetRate.m_strBLine = info.m_strBaseLine;
-                clsBetRate.m_strHLine = info.m_strLine;
-
-                if (clsBetRate.m_strApi != strApi)
+                if (nLive >= 2 && this.m_nLive == 2)
                 {
-                    continue;
+                    CBetRate clsBetRate = GetBetRateInfoByHBetID(nMarketID, info.m_strBetID, strApi, 2);
+                    clsBetRate.m_strBLine = info.m_strBaseLine;
+                    clsBetRate.m_strHLine = info.m_strLine;
+
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(0, info, nLive);
+                    }
+                    
                 }
-                clsBetRate.UpdateInfo(0, info, nLive);
+                if (nLive < 2 || nLive == 4)
+                {
+                    CBetRate clsBetRate = GetBetRateInfoByHBetID(nMarketID, info.m_strBetID, strApi, 1);
+                    clsBetRate.m_strBLine = info.m_strBaseLine;
+                    clsBetRate.m_strHLine = info.m_strLine;
+
+                    if (clsBetRate.m_strApi == strApi)
+                    {
+                        clsBetRate.UpdateInfo(0, info, 1);
+                    }
+                }
+                    
             }
         }
     }

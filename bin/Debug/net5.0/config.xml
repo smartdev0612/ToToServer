@@ -4,12 +4,18 @@
 	  <db_name>mubayo2_lsports</db_name>
 	  <db_user>traxex</db_user>
 	  <db_pass>pwdTraxex0701</db_pass>
+	  <api_url>https://client.lsports.eu</api_url>
+	  <api_username>dhfhwl@hotmail.com</api_username>
+	  <api_password>rv3457n4</api_password>
+	  <api_guid>e17e792f-9a6f-43d5-9390-023f832cc51c</api_guid>
+	  <api_prematch_package_id>3638</api_prematch_package_id>
+	  <api_live_package_id>3656</api_live_package_id>
 	  <addr_server>175.125.95.163</addr_server>
 	  <socket_data>3032</socket_data>
 	  <socket_prematch>3033</socket_prematch>
 	  <socket_live>3031</socket_live>
 	  <http_port>3034</http_port>
-	  <power_server>116.120.58.147:3002/pbAuto</power_server>
+	  <power_server>42.127.251.14:3030</power_server>
 	  <use_prematch>yes</use_prematch>
 	  <use_live>yes</use_live>
 	  <use_powerball>yes</use_powerball>
