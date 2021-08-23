@@ -709,6 +709,7 @@ namespace LSportsServer
             CGame clsLastGame = CGlobal.GetGameInfoByCode(lastChildSn);
             int lastSpecialCode = clsLastGame.m_nSpecial;
 
+            string strUserID = Convert.ToString(userInfo["uid"]);
             int recommendSn = CGlobal.ParseInt(userInfo["recommend_sn"]);
             int rollingSn = CGlobal.ParseInt(userInfo["rolling_sn"]);
             string author = Convert.ToString(userInfo["nick"]);
@@ -718,7 +719,10 @@ namespace LSportsServer
             string bettingIp = Convert.ToString(Context.UserEndPoint.Address);
             string bet_date = CMyTime.GetMyTimeStr("yyyy-MM-dd");
 
-            sql = $"insert into tb_total_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del,bet_date, is_account,betting_ip, last_special_code,logo,s_type) values({nUser}, '{protoId}', 0, now(), now(), '{buy}', 0, {betting_cnt}, {dbCash}, {betting}, {resultRate}, 0, {recommendSn}, {rollingSn}, 0, 'N', now(), {accountEnable}, '{bettingIp}', {lastSpecialCode}, 'gadget', 0)";
+            sql = $"INSERT INTO tb_total_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del,bet_date, is_account,betting_ip, last_special_code,logo,s_type) VALUES ({nUser}, '{protoId}', 0, now(), now(), '{buy}', 0, {betting_cnt}, {dbCash}, {betting}, {resultRate}, 0, {recommendSn}, {rollingSn}, 0, 'N', now(), {accountEnable}, '{bettingIp}', {lastSpecialCode}, 'gadget', 0)";
+            CMySql.ExcuteQuery(sql);
+
+            sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nBetCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {betting}, 1, now())";
             CMySql.ExcuteQuery(sql);
 
             sql = $"select * from tb_point_config";

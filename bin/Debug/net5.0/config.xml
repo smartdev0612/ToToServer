@@ -4,7 +4,7 @@
 	  <db_name>mubayo2_lsports</db_name>
 	  <db_user>traxex</db_user>
 	  <db_pass>pwdTraxex0701</db_pass>
-	  <api_url>https://client.lsports.eu</api_url>
+	  <api_url>https://prematch.lsports.eu</api_url>
 	  <api_username>dhfhwl@hotmail.com</api_username>
 	  <api_password>rv3457n4</api_password>
 	  <api_guid>e17e792f-9a6f-43d5-9390-023f832cc51c</api_guid>
@@ -20,7 +20,6 @@
 	  <use_live>yes</use_live>
 	  <use_powerball>yes</use_powerball>
 	  <use_powerladder>yes</use_powerladder>
-	  <use_kenoladder>yes</use_kenoladder>
 	  <server_http>3001</server_http>
 	  <server_port>3002</server_port>
 </config>

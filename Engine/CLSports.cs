@@ -152,7 +152,7 @@ namespace LSportsServer
                             DateTime dtLimit = CMyTime.GetMyTime().AddDays(3);
                             if (dtTime < dtLimit)
                             {
-                                clsGame.UpdateMarket(lstMarket);
+                                clsGame.UpdateMarket(lstMarket, 0);
                                 clsGame.UpdateScore(objFixture);
                                 //if (clsGame.GetBetRateCount() > 0)
                                 CGlobal.AddGameInfo(clsGame);
@@ -162,7 +162,7 @@ namespace LSportsServer
                     else
                     {
                         clsGame.UpdateInfo(objFixture);
-                        clsGame.UpdateMarket(lstMarket);
+                        clsGame.UpdateMarket(lstMarket, 0);
                         clsGame.UpdateScore(objFixture);
                     }
                 }
@@ -281,8 +281,7 @@ namespace LSportsServer
                     return;
                 }
                 List<JToken> lstMarket = objEvent["Markets"].ToList();
-                int nSports = clsGame.m_nSports;
-                clsGame.UpdateMarket(lstMarket, nSports, nLive);
+                clsGame.UpdateMarket(lstMarket, nLive);
                 
                 if(nLive == 2)
                 {
@@ -324,7 +323,7 @@ namespace LSportsServer
 
                 foreach(JToken objMarket in lstMarket)
                 {
-                    clsGame.UpdateResult(objMarket, clsGame.m_nSports, nLive);
+                    clsGame.UpdateResult(objMarket, nLive);
                 }
             }
         }
@@ -463,7 +462,17 @@ namespace LSportsServer
                    
                 }
 
-                CGlobal.GetGameList().RemoveAll(value => value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
+                try
+                {
+                    List<CGame> clsGameList = CGlobal.GetGameList();
+                    if(clsGameList != null)
+                        clsGameList.RemoveAll(value => value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
+                }
+                catch (Exception err)
+                {
+                    CGlobal.ShowConsole(err.Message);
+                }
+               
                 Thread.Sleep(1000 * 60);
             }
         }
@@ -520,7 +529,7 @@ namespace LSportsServer
                     JToken objScore = objBody;
 
                     clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, clsGame.m_nSports, 4);
+                    clsGame.UpdateMarket(lstMarket, 0);
                     clsGame.UpdateScore(objScore);
 
                     Thread.Sleep(200);
@@ -585,7 +594,7 @@ namespace LSportsServer
                     }
 
                     clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, clsGame.m_nSports, 3);
+                    clsGame.UpdateMarket(lstMarket, 3);
                     clsGame.UpdateScore(objScore);
 
                     Thread.Sleep(200);

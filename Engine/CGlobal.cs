@@ -149,7 +149,7 @@ namespace LSportsServer
 
         public static List<CGame> GetGameList()
         {
-            return _lstGame;
+            return _lstGame.ToList();
         }
 
         public static CPeriod GetPeriodInfoByCode(int nSports, int nPeriod)

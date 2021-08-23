@@ -78,7 +78,7 @@ namespace LSportsServer
                         isWinLose = true;
                     break;
                 case 35232: // 아이스 하키
-                    if (m_nMarket == 226)
+                    if (m_nMarket == 1)
                         isWinLose = true;
                     break;
                 case 687890: // E스포츠

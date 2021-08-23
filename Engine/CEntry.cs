@@ -157,7 +157,7 @@ namespace LSportsServer
 
         public static void SetGameSchedule(string strWhere)
         {
-            string sql = $"UPDATE tb_child SET live = 1 WHERE {strWhere}";
+            string sql = $"UPDATE tb_child SET live = 1 WHERE live != -1 AND {strWhere}";
             CMySql.ExcuteQuery(sql);
         }
 

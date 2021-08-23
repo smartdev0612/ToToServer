@@ -81,7 +81,8 @@ namespace LSportsServer
                 }
                 int nLastPecialCode = CGlobal.ParseInt(lstTotalCart[0]["last_special_code"]);
 
-
+                string strUserID = Convert.ToString(memberInfo["uid"]);
+                int recommendSn = CGlobal.ParseInt(memberInfo["recommend_sn"]);
                 string logo = Convert.ToString(memberInfo["logo"]);
                 int betMoney = CGlobal.ParseInt(betInfo["bet_money"]);
                 int nWinCash = 0;
@@ -91,6 +92,10 @@ namespace LSportsServer
                     nWinCash = CGlobal.ParseInt(betMoney * fWinRate);
                     sql = $"UPDATE tb_total_cart SET result = 4, operdate = now(), result_money = {nWinCash} WHERE logo = '{logo}' AND betting_no = '{betting_no}'";
                     CMySql.ExcuteQuery(sql);
+
+                    sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinCash}, 1, now())";
+                    CMySql.ExcuteQuery(sql);
+
                     modifyMoneyProcess(member_sn, nWinCash, betting_no, 5);
                 }
                 //낙첨
@@ -114,6 +119,10 @@ namespace LSportsServer
                     nWinCash = CGlobal.ParseInt(betMoney * fWinRate);
                     sql = $"UPDATE tb_total_cart SET result = 1, operdate = now(), result_money = {nWinCash} WHERE logo = '{logo}' AND betting_no = '{betting_no}'";
                     CMySql.ExcuteQuery(sql);
+
+                    sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinCash}, 1, now())";
+                    CMySql.ExcuteQuery(sql);
+
                     modifyMoneyProcess(member_sn, nWinCash, betting_no, 4);
                     //-> 배팅자 다폴더 마일리지 보너스.
                     if (nWinCnt > 2)
@@ -352,6 +361,8 @@ namespace LSportsServer
                 sql = $"SELECT * FROM tb_member WHERE sn = {nMemberSn}";
                 DataRow memberInfo = CMySql.GetDataQuery(sql)[0];
                 string strLogo = Convert.ToString(memberInfo["logo"]);
+                string strUserID = Convert.ToString(memberInfo["uid"]);
+                int recommendSn = CGlobal.ParseInt(memberInfo["recommend_sn"]);
 
                 if (nTotalCount == nCancelCount)
                 {
@@ -359,6 +370,10 @@ namespace LSportsServer
                     nWinMoney = CGlobal.ParseInt(nBetMoney * fWinRate);
                     sql = $"UPDATE tb_total_cart SET result = 4, operdate = now(), result_money = {nWinMoney} WHERE logo = '{strLogo}' AND betting_no = '{strBettingNo}'";
                     CMySql.ExcuteQuery(sql);
+
+                    sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinMoney}, 2, now())";
+                    CMySql.ExcuteQuery(sql);
+
                     CResult.modifyMoneyProcess(nMemberSn, nWinMoney, strBettingNo, 5);
                 }
                 else if (nLoseCount > 0)
@@ -381,6 +396,10 @@ namespace LSportsServer
                     nWinMoney = CGlobal.ParseInt(nBetMoney * fWinRate);
                     sql = $"UPDATE tb_total_cart SET result = 1, operdate = now(), result_money = {nWinMoney} WHERE logo = '{strLogo}' AND betting_no = '{strBettingNo}'";
                     CMySql.ExcuteQuery(sql);
+
+                    sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinMoney}, 2, now())";
+                    CMySql.ExcuteQuery(sql);
+
                     CResult.modifyMoneyProcess(nMemberSn, nWinMoney, strBettingNo, 4);
 
                     //-> 배팅자 다폴더 마일리지 보너스.

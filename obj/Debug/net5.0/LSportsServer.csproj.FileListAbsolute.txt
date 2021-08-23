@@ -108,4 +108,3 @@ C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\scopedcss
 C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\Sports.dll
 C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\ref\Sports.dll
 C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\Sports.pdb
-C:\Users\Administrator\Documents\Server\LSportsServer\obj\Debug\net5.0\LSportsServer.csproj.AssemblyReference.cache

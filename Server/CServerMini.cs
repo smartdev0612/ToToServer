@@ -225,6 +225,7 @@ namespace LSportsServer
             sql = $"INSERT INTO tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,mini_game_code) VALUES({subChildSn}, {nUser}, '{protoId}', {selectTeam}, {home_rate}, {draw_rate}, {away_rate}, {btRateTotal}, 1, 0, 0, 'Y', {btMoney}, '{gameType}')";
             CMySql.ExcuteQuery(sql);
 
+            string strUserID = Convert.ToString(userInfo["uid"]);
             int user_recommend_sn = CGlobal.ParseInt(userInfo["recommend_sn"]);
 		    int user_rolling_sn = CGlobal.ParseInt(userInfo["rolling_sn"]);
             string user_status = Convert.ToString(userInfo["mem_status"]);
@@ -234,6 +235,8 @@ namespace LSportsServer
             sql = $"insert into tb_total_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del, bet_date, is_account, betting_ip, last_special_code, logo,s_type) values({nUser}, '{protoId}', 0, now(), now(), 'Y', 0, 1, {userMoney}, {btMoney}, {btRateTotal}, 0, {user_recommend_sn}, {user_rolling_sn}, '0', 'N', now(), {user_account_enable}, '{bettingIp}', {specialCode}, 'gadget', 0)";
             CMySql.ExcuteQuery(sql);
 
+            sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nBetCash, nMode, strBetTime) VALUES ('{strUserID}', {user_recommend_sn}, {btMoney}, 2, now())";
+            CMySql.ExcuteQuery(sql);
 
             string mem_status = Convert.ToString(userInfo["mem_status"]);
             int before = CGlobal.ParseInt(userInfo["g_money"]);
