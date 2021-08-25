@@ -403,8 +403,15 @@ namespace LSportsServer
                 lstMarketID.Add(nMarketID);
                 if (CGlobal.CheckMarketID(nMarketID))
                 {
-                    UpdateBetRate(objMarket, nLive, lstStrApi);
-                    lstRate.FindAll(value => value.m_nMarket == nMarketID && lstStrApi.Exists(val => val == value.m_strApi) == false).ForEach(value => value.m_nStatus = 2);
+                    if(nLive == 3)
+                    {
+                        UpdateBetRate(objMarket, nLive, lstStrApi);
+                        lstRate.FindAll(value => value.m_nMarket == nMarketID && lstStrApi.Exists(val => val == value.m_strApi) == false).ForEach(value => value.m_nStatus = 2);
+                    }
+                    else
+                    {
+                        UpdateBetRate(objMarket, nLive);
+                    }
                 }
             }
 
@@ -431,7 +438,18 @@ namespace LSportsServer
         private void UpdateBetRate(JToken objInfo, int nLive, List<string> lstStrApi = null)
         {
             if (m_bCheck == false)
-                return;
+            {
+                if(nLive >= 2)
+                {
+                    CLSports.GetGameInfoFromApi(this.m_nFixtureID);
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+                
 
             if (objInfo["Providers"] == null || !objInfo["Providers"].HasValues)
                 return;

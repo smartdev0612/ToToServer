@@ -49,8 +49,8 @@ namespace LSportsServer
                 int recommendSn = CGlobal.ParseInt(row["Idx"]);
                 string recommendId = Convert.ToString(row["rec_id"]);
                 string tex_type = Convert.ToString(row["rec_tex_type"]);                                    //-> 총판 정산타입코드
-                double rate_sport = Convert.ToDouble(row["rec_rate_sport"]);                                //-> 총판 스포츠 정산 비율%
-                double rate_minigame = Convert.ToDouble(row["rec_rate_minigame"]);                          //-> 총판 미니게임 정산 비율%
+                double rate_sport = Math.Round(Convert.ToDouble(row["rec_rate_sport"]), 1);                                //-> 총판 스포츠 정산 비율%
+                double rate_minigame = Math.Round(Convert.ToDouble(row["rec_rate_minigame"]), 1);                          //-> 총판 미니게임 정산 비율%
                 int one_folder_flag = CGlobal.ParseInt(row["rec_one_folder_flag"]);                          //-> 총판 단폴더 정산 포함 여부
                 string recommendId_top = Convert.ToString(row["rec_parent_id"]);                            //-> 총판 부본사ID
 
@@ -72,10 +72,10 @@ namespace LSportsServer
 
                     recommendSn_top = CGlobal.ParseInt(topRecData[0]["Idx"]);
                     recommendId_top = Convert.ToString(topRecData[0]["rec_id"]);
-                    tex_type_top = Convert.ToString(topRecData[0]["rec_tex_type"]);                             //-> 부본사 정산타입코드
-                    rate_sport_top = Convert.ToDouble(topRecData[0]["rec_rate_sport"]);                         //-> 부본사 스포츠 정산 비율%
-                    rate_minigame_top = Convert.ToDouble(topRecData[0]["rec_rate_minigame"]);                   //-> 부본사 미니게임 정산 비율%
-                    one_folder_flag_top = CGlobal.ParseInt(topRecData[0]["rec_one_folder_flag"]);                //-> 부본사 단폴더 정산 포함 여부
+                    tex_type_top = Convert.ToString(topRecData[0]["rec_tex_type"]);                                             //-> 부본사 정산타입코드
+                    rate_sport_top = Math.Round(Convert.ToDouble(topRecData[0]["rec_rate_sport"]), 1);                         //-> 부본사 스포츠 정산 비율%
+                    rate_minigame_top = Math.Round(Convert.ToDouble(topRecData[0]["rec_rate_minigame"]), 1);                   //-> 부본사 미니게임 정산 비율%
+                    one_folder_flag_top = CGlobal.ParseInt(topRecData[0]["rec_one_folder_flag"]);                               //-> 부본사 단폴더 정산 포함 여부
                 }
                 //-> 단폴 포함 여부.
                 string add_where = string.Empty;

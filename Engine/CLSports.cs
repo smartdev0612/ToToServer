@@ -479,7 +479,7 @@ namespace LSportsServer
 
 
 
-        private static void GetGameInfoFromApi(long nFixtureId)
+        public static void GetGameInfoFromApi(long nFixtureId)
         {
             CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureId);
             if (clsGame == null)
