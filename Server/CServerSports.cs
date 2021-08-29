@@ -194,7 +194,7 @@ namespace LSportsServer
                 double selectedRate = Convert.ToDouble(lstParam[7]);
 
                 CGame clsGame = CGlobal.GetGameInfoByCode(childSn);
-                if (clsGame == null)
+                if (childSn == 0 || clsGame == null)
                 {
                     ReturnPacket(CDefine.PACKET_SPORT_BET, "경기타입이 오류가 발생되였습니다.", 1);
                     return;
@@ -1027,7 +1027,7 @@ namespace LSportsServer
             try
             {
                 lstGame = CGlobal.GetGameList();
-                lstGame = lstGame.FindAll(value => value.CheckGame() && value.m_nCountry > 0 && value.m_nBlock == 0).OrderBy(value => value.m_strGameTime).ThenBy(value => value.m_nLeague).ToList();
+                lstGame = lstGame.FindAll(value => value != null && value.CheckGame() && value.m_nCountry > 0 && value.m_nBlock == 0);//
             }
             catch(Exception err)
             {
@@ -1052,17 +1052,17 @@ namespace LSportsServer
                 return;
 
             if (m_reqParam.m_strSports == "soccer")
-                nSports = 6046;
+                nSports = CDefine.LSPORTS_SPORTS_SOCCER;
             else if (m_reqParam.m_strSports == "basketball")
-                nSports = 48242;
+                nSports = CDefine.LSPORTS_SPORTS_BASKETBALL;
             else if (m_reqParam.m_strSports == "volleyball")
-                nSports = 154830;
+                nSports = CDefine.LSPORTS_SPORTS_VOLLEYBALL;
             else if (m_reqParam.m_strSports == "baseball")
-                nSports = 154914;
+                nSports = CDefine.LSPORTS_SPORTS_BASEBALL;
             else if (m_reqParam.m_strSports == "hockey")
-                nSports = 35232;
+                nSports = CDefine.LSPORTS_SPORTS_HOCKEY;
             else if (m_reqParam.m_strSports == "esports")
-                nSports = 687890;
+                nSports = CDefine.LSPORTS_SPORTS_ESPORTS;
 
             if (nSports > 0)
                 lstGame = lstGame.FindAll(value => value.m_nSports == nSports);
@@ -1098,6 +1098,8 @@ namespace LSportsServer
 
 
             List<CLSportsPacket> lstSendPacket = new List<CLSportsPacket>();
+
+            lstGame = lstGame.OrderBy(value => value.m_strGameTime).ThenBy(value => value.m_nLeague).ToList();
             int nTotalCnt = lstGame.Count;
 
             int nIndex = m_reqParam.m_nPageIndex * m_reqParam.m_nPageSize;
@@ -1185,6 +1187,7 @@ namespace LSportsServer
                 foreach (CBetRate info in lstBetRate)
                 {
                     CLSportsDPacket packet = new CLSportsDPacket();
+
                     packet.m_nMarket = info.m_nMarket;
                     packet.m_strMarket = "";
                     CMarket clsMarket = CGlobal.GetMarketInfoByCode(info.m_nMarket);
@@ -1343,9 +1346,16 @@ namespace LSportsServer
                 if(clsServer.m_reqParam != null) 
                 {
                     clsServer.SendGameListPacket(CDefine.PACKET_SPORT_AJAX);
-                }
 
-                Thread.Sleep(1000);
+                    if (clsServer.m_reqParam.m_nLive == 2)
+                        Thread.Sleep(1000);
+                    else
+                        Thread.Sleep(5000);
+                }
+                else
+                {
+                    Thread.Sleep(3000);
+                }
             }
         }
     }

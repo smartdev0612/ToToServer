@@ -19,6 +19,8 @@ namespace LSportsServer
 
         private static List<CGame> _lstGame;
         private static Queue<string>[] _lstStrLSportsPacket;
+        private static List<long> _lstlnGetApiFixtureID;
+        private static List<long> _lstlnGetLiveFixtureID;
 
         private static CGameServer _wsServer;
 
@@ -39,9 +41,13 @@ namespace LSportsServer
             {
                 new Queue<string>(), new Queue<string>(), new Queue<string>()
             };
+            _lstlnGetApiFixtureID = new List<long>();
+            _lstlnGetLiveFixtureID = new List<long>();
+
 
             LoadInfoFromDB();
 
+            
             CLSports.Connect();
             //CPowerball.StartPowerball();
             CEngine.StartRealProcess();
@@ -103,7 +109,8 @@ namespace LSportsServer
                 _lstPeriod.Add(clsInfo);
             }
             Console.WriteLine($"Period info {_lstPeriod.Count}");
-                
+
+            CEngine.ClearDBThread();
             new Thread(() => CLSports.LoadGameInfoToDB()).Start();
         }
 
@@ -149,7 +156,7 @@ namespace LSportsServer
 
         public static List<CGame> GetGameList()
         {
-            return _lstGame.ToList();
+            return _lstGame;
         }
 
         public static CPeriod GetPeriodInfoByCode(int nSports, int nPeriod)
@@ -165,6 +172,11 @@ namespace LSportsServer
         public static void RemoveGame(CGame clsInfo)
         {
             _lstGame.Remove(clsInfo);
+        }
+
+        public static void RemoveGameAtFixtureID(long nFixtureID)
+        {
+            _lstGame.RemoveAll(value => value.m_nFixtureID == nFixtureID);
         }
 
         public static void AddLSportsPacket(int nFlag, string strPacket)
@@ -191,6 +203,78 @@ namespace LSportsServer
         {
             Console.WriteLine($"{CMyTime.GetMyTimeStr()}        {strMsg}");
         }
+
+        //public static void PushGetApiFixtureID(long nFixtureID)
+        //{
+        //    lock(_lstlnGetApiFixtureID)
+        //    {
+        //        if(_lstlnGetApiFixtureID.Exists(value=>value == nFixtureID) == false)
+        //        {
+        //            _lstlnGetApiFixtureID.Add(nFixtureID);
+        //            CGlobal.ShowConsole("PushApiFixtureID =>" + _lstlnGetApiFixtureID.Count);
+        //        }
+        //    }
+        //}
+
+        //public static long PopGetApiFixtureID()
+        //{
+        //    long nFixtureID = 0;
+        //    lock (_lstlnGetApiFixtureID)
+        //    {
+        //        if(_lstlnGetApiFixtureID.Count > 0)
+        //        {
+        //            nFixtureID = _lstlnGetApiFixtureID[0];
+        //            CGlobal.ShowConsole("PopApiFixtureID =>" + _lstlnGetApiFixtureID.Count);
+        //        }
+                    
+        //    }
+
+        //    return nFixtureID;
+        //}
+
+        //public static void RemoveGetApiFixtureID(long nFixtureID)
+        //{
+        //    lock (_lstlnGetApiFixtureID)
+        //    {
+        //        _lstlnGetApiFixtureID.RemoveAll(value => value == nFixtureID);
+        //    }
+        //}
+
+
+        //public static void PushGetLiveFixtureID(long nFixtureID)
+        //{
+        //    lock (_lstlnGetLiveFixtureID)
+        //    {
+        //        if (_lstlnGetLiveFixtureID.Exists(value => value == nFixtureID) == false)
+        //        {
+        //            _lstlnGetLiveFixtureID.Add(nFixtureID);
+        //            CGlobal.ShowConsole("PushLiveFixtureID =>" + _lstlnGetLiveFixtureID.Count);
+        //        }
+        //    }
+        //}
+
+        //public static long PopGetLiveFixtureID()
+        //{
+        //    long nFixtureID = 0;
+        //    lock (_lstlnGetLiveFixtureID)
+        //    {
+        //        if (_lstlnGetLiveFixtureID.Count > 0)
+        //        {
+        //            nFixtureID = _lstlnGetLiveFixtureID[0];
+        //            CGlobal.ShowConsole("PopLiveFixtureID =>" + _lstlnGetLiveFixtureID.Count);
+        //        }
+        //    }
+
+        //    return nFixtureID;
+        //}
+
+        //public static void RemoveGetLiveFixtureID(long nFixtureID)
+        //{
+        //    lock (_lstlnGetLiveFixtureID)
+        //    {
+        //        _lstlnGetLiveFixtureID.RemoveAll(value => value == nFixtureID);
+        //    }
+        //}
 
         public static async Task WriteLogAsync(string strLog)
         {

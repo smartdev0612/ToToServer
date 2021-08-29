@@ -102,7 +102,7 @@ namespace LSportsServer
 
     public class MBetRate : MBase
     {
-        public int m_nGame;
+        //public int m_nGame;
         public int m_nMarket;
         public string m_strHBetCode;
         public string m_strDBetCode;

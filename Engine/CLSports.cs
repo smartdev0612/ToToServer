@@ -12,7 +12,7 @@ namespace LSportsServer
 {
     public static class CLSports
     {
-        //private static WebSocket m_wsData;
+        private static WebSocket m_wsData;
         private static WebSocket m_wsPrematch;
         private static WebSocket m_wsLive;
         
@@ -48,9 +48,13 @@ namespace LSportsServer
                 //new Thread(() => StartThread(CDefine.LSPORTS_LIVE)).Start();
             }
 
+            { 
+                
+            }
+
+
             new Thread(() => StartCheckFinished()).Start();
             new Thread(() => StartCheckSchedule()).Start();
-            new Thread(() => StartCheckLive()).Start();
         }
 
         private static void Prematch_OnClose(object sender, CloseEventArgs e)
@@ -231,6 +235,7 @@ namespace LSportsServer
                     clsGame = new CGame(nFixtureID);
                     CGlobal.AddGameInfo(clsGame);
                 }
+
                 clsGame.UpdateInfo(objFixture);
             }
 
@@ -336,7 +341,6 @@ namespace LSportsServer
                 DataRowCollection list = CMySql.GetDataQuery(sql);
 
                 long nOldFixtureId = 0;
-                List<long> lstFixtureID = new List<long>();
                 foreach (DataRow info in list)
                 {
                     if (info["game_sn"] == System.DBNull.Value)
@@ -380,40 +384,20 @@ namespace LSportsServer
 
                     if(nOldFixtureId != nFixtureId)
                     {
-                        lstFixtureID.Add(nFixtureId);
+                        GetGameInfoFromApi(nFixtureId);
                         nOldFixtureId = nFixtureId;
                     }
                 }
 
-                List<CGame> lstGame = CGlobal.GetGameList().FindAll(value => value.m_nStatus >= 2);
+                List<CGame> lstGame = CGlobal.GetGameList();
+                lstGame = lstGame.FindAll(value => value != null && value.m_nStatus >= 2);
                 foreach(CGame clsGame in lstGame)
                 {
-                    if (lstFixtureID.Exists(value => value == clsGame.m_nFixtureID) == false)
-                        lstFixtureID.Add(clsGame.m_nFixtureID);
+                    GetGameInfoFromApi(clsGame.m_nFixtureID);
                 }
 
 
-                foreach (long nFixtureID in lstFixtureID)
-                {
-                    GetGameInfoFromApi(nFixtureID);
-                }
-
-                Thread.Sleep(30 * 1000);
-            }
-        }
-
-        private static void StartCheckLive()
-        {
-            while(true)
-            {
-                List<CGame> lstSubGame = CGlobal.GetGameList();
-                List<CGame> lstGame = lstSubGame.FindAll(value => value.CheckLive());
-                foreach(CGame clsGame in lstGame)
-                {
-                    GetInPlayInfoFromApi(clsGame.m_nFixtureID);
-                }
-
-                Thread.Sleep(3000);
+                Thread.Sleep(10 * 1000);
             }
         }
 
@@ -464,9 +448,14 @@ namespace LSportsServer
 
                 try
                 {
-                    List<CGame> clsGameList = CGlobal.GetGameList();
-                    if(clsGameList != null)
-                        clsGameList.RemoveAll(value => value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
+                    List<CGame> lstGame = CGlobal.GetGameList();
+                    if(lstGame != null)
+                    {
+                        lock(lstGame)
+                        {
+                            lstGame.RemoveAll(value => value != null && value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
+                        }
+                    }
                 }
                 catch (Exception err)
                 {
@@ -478,8 +467,7 @@ namespace LSportsServer
         }
 
 
-
-        public static void GetGameInfoFromApi(long nFixtureId)
+        private static void GetGameInfoFromApi(long nFixtureId)
         {
             CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureId);
             if (clsGame == null)
@@ -532,7 +520,7 @@ namespace LSportsServer
                     clsGame.UpdateMarket(lstMarket, 0);
                     clsGame.UpdateScore(objScore);
 
-                    Thread.Sleep(200);
+                    clsGame.SetCheckMarket();
                 }
             }
             catch
@@ -542,7 +530,7 @@ namespace LSportsServer
 
         }
 
-        public static void GetInPlayInfoFromApi(long nFixtureId)
+        private static void GetInPlayInfoFromApi(long nFixtureId)
         {
             string strReq = $"http://{CDefine.ADDR_SEVER}:{CDefine.HTTP_PORT}/LSports/inplay?{nFixtureId}";
             string strPacket = CHttp.GetResponseString(strReq);
@@ -567,21 +555,21 @@ namespace LSportsServer
                 {
                     if (objEvent["Fixture"] == null || !objEvent["Fixture"].HasValues)
                     {
-                        return;
+                        continue;
                     }
 
                     JToken objFixture = objEvent;
 
                     if (objEvent["Markets"] == null || !objEvent["Markets"].HasValues)
                     {
-                        return;
+                        continue;
                     }
 
                     List<JToken> lstMarket = objEvent["Markets"].ToList();
 
                     if (lstMarket.Count == 0)
                     {
-                        return;
+                        continue;
                     }
 
                     JToken objScore = objEvent;
@@ -597,7 +585,7 @@ namespace LSportsServer
                     clsGame.UpdateMarket(lstMarket, 3);
                     clsGame.UpdateScore(objScore);
 
-                    Thread.Sleep(200);
+                    clsGame.SetCheckMarket();
                 }
             }
             catch
@@ -614,15 +602,24 @@ namespace LSportsServer
             DataRowCollection list = CEntry.SelectGame();
             foreach (DataRow info in list)
             {
-                CGame clsInfo = new CGame();
-                clsInfo.LoadInfo(info);
-                if(clsInfo.CheckGame())
+                long nFixtureID = Convert.ToInt64(info["game_sn"]);
+                CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
+                if(clsGame == null)
                 {
-                    CGlobal.AddGameInfo(clsInfo);
-
-                    GetGameInfoFromApi(clsInfo.m_nFixtureID);
-                    CGlobal.ShowConsole($"Loading {clsInfo.m_nFixtureID} game! *************************");
-
+                    clsGame = new CGame();
+                    clsGame.LoadInfo(info);
+                    CGlobal.AddGameInfo(clsGame);
+                }
+                else
+                {
+                    clsGame.LoadInfo(info);
+                }
+                
+                if(clsGame.CheckGame())
+                {
+                    GetGameInfoFromApi(clsGame.m_nFixtureID);
+                    CGlobal.ShowConsole($"Loading {clsGame.m_nFixtureID} game! *************************");
+                    Thread.Sleep(300);
                 }
                 else
                 {
@@ -633,15 +630,26 @@ namespace LSportsServer
 
             while(true)
             {
-                List<CGame> lstInfo = CGlobal.GetGameList().FindAll(value => value.CheckGame() == false);
-
-                foreach(CGame clsInfo in lstInfo)
+                try
                 {
-                    GetGameInfoFromApi(clsInfo.m_nFixtureID);
-                    CGlobal.ShowConsole($"Loading {clsInfo.m_nFixtureID} game! *************************");
+                    List<CGame> lstGame = CGlobal.GetGameList();
+                    lstGame = lstGame.FindAll(value => value != null && value.CheckMarket() == false);
 
-                    Thread.Sleep(2000);
+                    foreach (CGame clsInfo in lstGame)
+                    {
+                        if (clsInfo == null)
+                            continue;
+
+                        GetGameInfoFromApi(clsInfo.m_nFixtureID);
+                        CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
+                        Thread.Sleep(1000);
+                    }
                 }
+                catch(Exception err)
+                {
+                    CGlobal.ShowConsole(err.Message);
+                }
+                
 
                 Thread.Sleep(1000);
             }

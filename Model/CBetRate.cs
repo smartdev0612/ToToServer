@@ -7,7 +7,7 @@ namespace LSportsServer
     public class CBetRate : MBetRate, ILSports
     {
         public double m_dOrder;             //현시순서를 정렬하기 위한 변수  
-        private CGame m_clsGame;
+        public CGame m_clsGame;
 
 
         public int m_nFamily => GetFamily();
@@ -15,7 +15,6 @@ namespace LSportsServer
         public CBetRate(CGame clsGame)
         {
             m_clsGame = clsGame;
-            m_nGame = clsGame.m_nCode;
             m_nStatus = 1;
         }
 
@@ -216,9 +215,8 @@ namespace LSportsServer
 
             ChangeAdminRate();
 
-            if (m_nStatus > 2 && m_nCode > 0)
+            if (m_nStatus > 2)
             {
-                UpdateResult(info);
                 if(m_clsGame.IsFinishGame() && m_clsGame.IsFinishAllRate())
                 {
                     CGlobal.RemoveGame(m_clsGame);
@@ -279,7 +277,7 @@ namespace LSportsServer
             }
         }
 
-        private void UpdateResult(CBetInfo info)
+        public void UpdateResult(CBetInfo info)
         {
             int nIndex = 0;
             if (info.m_strName == "1" || info.m_strName == "Under" || info.m_strName == "Odd" || info.m_strName == "1X")
@@ -317,7 +315,7 @@ namespace LSportsServer
                 //핸디캡일때 처리
                 string[] lststrWinTeam = { "Home", "Away", "Draw", "Cancel" };
                 string strHandiWin = lststrWinTeam[nIndex];
-                string query = $"UPDATE tb_child SET handi_winner = '{strHandiWin}' WHERE sn = '{m_nGame}'";
+                string query = $"UPDATE tb_child SET handi_winner = '{strHandiWin}' WHERE sn = '{m_clsGame.m_nCode}'";
                 CMySql.ExcuteQuery(query);
             }
 

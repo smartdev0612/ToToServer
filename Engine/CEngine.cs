@@ -496,7 +496,7 @@ namespace LSportsServer
             }
         }
 
-        private static void ClearDBThread()
+        public static void ClearDBThread()
         {
             DateTime nowTime = CMyTime.GetMyTime();
             DateTime preTime = nowTime.AddDays(-7);
@@ -505,7 +505,10 @@ namespace LSportsServer
             DateTime yesterdayTime = nowTime.AddDays(-1);
             string strYesterday = yesterdayTime.ToString("yyyy-MM-dd");
 
-            string sql = $"SELECT * FROM tb_child WHERE status > 2 AND gameDate < '{strPreDate}'";
+            string strNowTime = nowTime.AddHours(-3).ToString("yyyy-MM-dd HH:mm");
+
+            string sql = $"SELECT tb_child.sn, tb_child.game_sn FROM tb_child LEFT JOIN tb_subchild ON tb_child.sn = tb_subchild.child_sn WHERE tb_child.sport_id > 0 AND CONCAT(tb_child.gameDate, ' ', tb_child.gameHour, ':', tb_child.gameTime) <= '{strNowTime} 00:00' AND tb_subchild.sn IS NULL UNION SELECT sn, game_sn FROM tb_child WHERE STATUS > 2 AND gameDate< '{strPreDate}'";
+
             DataRowCollection list = CMySql.GetDataQuery(sql);
             Console.WriteLine(list.Count);
 
@@ -524,6 +527,8 @@ namespace LSportsServer
 
                     long nFixtureID = Convert.ToInt64(info["game_sn"]);
                     strDeleteScore += $" OR game_sn = {nFixtureID}";
+
+                    CGlobal.RemoveGameAtFixtureID(nFixtureID);
                 }
 
                 CMySql.ExcuteQuery(strDeleteChild);
