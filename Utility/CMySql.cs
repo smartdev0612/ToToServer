@@ -1,11 +1,16 @@
 ﻿using MySql.Data.MySqlClient;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Threading;
 
 namespace LSportsServer
 {
     public static class CMySql
     {
+        public static Queue<string> lstQuery = new Queue<string>();
+        public static object objQueryList = new object();
+
         public static string GetDBConnectString()
         {
             string db_server = "server=" + CDefine.DB_ADDR + ";";
@@ -19,9 +24,9 @@ namespace LSportsServer
         }
 
 
-        public static long ExcuteQuery(string sql)
+        public static int ExcuteQuery(string sql)
         {
-            long nSn = 0;
+            int nSn = 0;
 
             CGlobal.ShowConsole(sql);
             using (MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString()))
@@ -29,7 +34,7 @@ namespace LSportsServer
                 mysqlCon.Open();
                 MySqlCommand command = new MySqlCommand(sql, mysqlCon);
                 command.ExecuteNonQuery();
-                nSn = command.LastInsertedId;
+                nSn = Convert.ToInt32(command.LastInsertedId);
 
                 mysqlCon.Close();
             }
@@ -37,6 +42,76 @@ namespace LSportsServer
             return nSn;
         }
 
+        public static void  ExcuteQueryList(List<string> lstSql)
+        {
+            using (MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString()))
+            {
+                mysqlCon.Open();
+
+                foreach(string sql in lstSql)
+                {
+                    CGlobal.ShowConsole(sql);
+                    MySqlCommand command = new MySqlCommand(sql, mysqlCon);
+                    command.ExecuteNonQuery();
+
+                    Thread.Sleep(10);
+                }
+                mysqlCon.Close();
+            }
+        }
+
+        public static void ExcuteCommonQuery()
+        {
+            MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString());
+            mysqlCon.Open();
+
+            string strQuery = "";
+
+            while (true)
+            {
+                strQuery = "";
+
+                lock (objQueryList)
+                {
+                    if (lstQuery.Count > 0)
+                    {
+                        strQuery = lstQuery.Dequeue();
+                    }
+                }
+
+                if (strQuery == "")
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                try
+                {
+                    new MySqlCommand(strQuery, mysqlCon).ExecuteNonQuery();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+
+                    mysqlCon.Close();
+                    break;
+                }
+
+                Thread.Sleep(10);
+            }
+
+            Thread.Sleep(100);
+
+            ExcuteCommonQuery();
+        }
+
+        public static void PushCommonQuery(string strQuery)
+        {
+            lock (objQueryList)
+            {
+                lstQuery.Enqueue(strQuery);
+            }
+        }
 
         public static DataRowCollection GetDataQuery(string sql)
         {

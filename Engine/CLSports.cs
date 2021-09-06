@@ -12,7 +12,6 @@ namespace LSportsServer
 {
     public static class CLSports
     {
-        private static WebSocket m_wsData;
         private static WebSocket m_wsPrematch;
         private static WebSocket m_wsLive;
         
@@ -47,11 +46,6 @@ namespace LSportsServer
                 m_wsLive.Connect();
                 //new Thread(() => StartThread(CDefine.LSPORTS_LIVE)).Start();
             }
-
-            { 
-                
-            }
-
 
             new Thread(() => StartCheckFinished()).Start();
             new Thread(() => StartCheckSchedule()).Start();
@@ -170,8 +164,6 @@ namespace LSportsServer
                         clsGame.UpdateScore(objFixture);
                     }
                 }
-                
-
             }
             catch (Exception err)
             {
@@ -368,7 +360,7 @@ namespace LSportsServer
                         {
                             clsRate = new CBetRate(clsGame);
                             clsRate.LoadInfo(info);
-                            clsGame.GetPrematchBetRateList().Add(clsRate);
+                            clsGame.AddPrematchBetRate(clsRate);
                         }
                     }
                     else
@@ -378,7 +370,7 @@ namespace LSportsServer
                         {
                             clsRate = new CBetRate(clsGame);
                             clsRate.LoadInfo(info);
-                            clsGame.GetLiveBetRateList().Add(clsRate);
+                            clsGame.AddLiveBetRate(clsRate);
                         }
                     }
 

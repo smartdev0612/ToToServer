@@ -86,6 +86,7 @@ namespace LSportsServer
                 string logo = Convert.ToString(memberInfo["logo"]);
                 int betMoney = CGlobal.ParseInt(betInfo["bet_money"]);
                 int nWinCash = 0;
+
                 //모두 취소된 게임
                 if (nTotalCnt == nCancelCnt)
                 {
@@ -285,6 +286,7 @@ namespace LSportsServer
             sql = $"SELECT sn FROM tb_subchild WHERE child_sn = {nChildSn}";
             DataRow subChildInfo = CMySql.GetDataQuery(sql)[0];
             int nSubChild = CGlobal.ParseInt(subChildInfo["sn"]);
+
             sql = $"UPDATE tb_subchild SET result = 1 WHERE  sn = {nSubChild}";
             CMySql.ExcuteQuery(sql);
 
@@ -431,19 +433,26 @@ namespace LSportsServer
 
         public static void modifyMoneyProcess(int nSn, int nAmount, string strBetingNo, int nState)
         {
-            string sql = $"SELECT g_money, mem_status FROM tb_member WHERE sn = {nSn}";
-            DataRowCollection lstMemberGmoney = CMySql.GetDataQuery(sql);
-            if (lstMemberGmoney.Count == 0)
+            DataRow memberGmoneyInfo;
+            string sql = "";
+            int nBefore = 0;
+            int nAfter = 0;
+
+            lock (CGlobal._objLock)
             {
-                return;
+                sql = $"SELECT g_money, mem_status FROM tb_member WHERE sn = {nSn}";
+                DataRowCollection lstMemberGmoney = CMySql.GetDataQuery(sql);
+                if (lstMemberGmoney.Count == 0)
+                {
+                    return;
+                }
+                memberGmoneyInfo = lstMemberGmoney[0];
+                nBefore = CGlobal.ParseInt(memberGmoneyInfo["g_money"]);
+                nAfter = nBefore + nAmount;
+
+                sql = $"UPDATE tb_member SET g_money = {nAfter} WHERE sn = {nSn}";
+                CMySql.ExcuteQuery(sql);
             }
-            DataRow memberGmoneyInfo = lstMemberGmoney[0];
-            int nBefore = CGlobal.ParseInt(memberGmoneyInfo["g_money"]);
-            int nAfter = nBefore + nAmount;
-
-            sql = $"UPDATE tb_member SET g_money = {nAfter} WHERE sn = {nSn}";
-            CMySql.ExcuteQuery(sql);
-
 
             if (Convert.ToString(memberGmoneyInfo["mem_status"]) == "N")
             {

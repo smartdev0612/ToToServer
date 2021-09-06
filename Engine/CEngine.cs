@@ -178,38 +178,9 @@ namespace LSportsServer
                 {
                     //-> 기본정산비율인 $rate_sport의 비율로 정산.
                     tex_type_name = "입금-출금";
+
                     tex_money = CGlobal.ParseInt(((total_charge - total_exchange) * rate_sport) * 0.01);             //-> 총판
                     tex_money_top = CGlobal.ParseInt(((total_charge - total_exchange) * rate_sport_top) * 0.01);     //-> 부본사
-
-                    tex_money_m = CGlobal.ParseInt(((total_betting_win_mgame + total_betting_lose_mgame) * rate_minigame) * 0.01);          //-> 총판
-                    tex_money_top_m = CGlobal.ParseInt(((total_betting_win_mgame + total_betting_lose_mgame) * rate_minigame_top) * 0.01);  //-> 부본사
-
-                    //-> 합산
-                    tex_money += tex_money_m;
-                    tex_money_top += tex_money_top_m;
-                }
-                else if (tex_type_top == "inout" || tex_type == "inout")
-                {
-                    //-> 기본정산비율인 $rate_sport의 비율로 정산.
-                    tex_type_name = "입금-출금";
-
-                    if (total_charge > total_exchange)
-                    {
-                        tex_money = CGlobal.ParseInt(((total_charge - total_exchange) * rate_sport) * 0.01);             //-> 총판
-                        tex_money_top = CGlobal.ParseInt(((total_charge - total_exchange) * rate_sport_top) * 0.01);     //-> 부본사
-                    }
-                    else
-                    {
-                        tex_money = CGlobal.ParseInt(((total_charge - total_exchange) * rate_sport) * 0.01 * rate_sport_top);            //-> 총판
-                        tex_money_top = CGlobal.ParseInt((total_charge - total_exchange) * 0.01);                                        //-> 부본사
-                    }
-
-                    tex_money_m = CGlobal.ParseInt(((total_betting_win_mgame + total_betting_lose_mgame) * rate_minigame) * 0.01);
-                    tex_money_top_m = CGlobal.ParseInt(((total_betting_win_mgame + total_betting_lose_mgame) * rate_minigame_top) * 0.01);
-
-                    //-> 합산
-                    tex_money += tex_money_m;
-                    tex_money_top += tex_money_top_m;
                 }
                 else if (tex_type_top == "inout_Mbet" || tex_type == "inout_Mbet")
                 {
@@ -500,7 +471,9 @@ namespace LSportsServer
         {
             DateTime nowTime = CMyTime.GetMyTime();
             DateTime preTime = nowTime.AddDays(-7);
+            DateTime preBettingTime = nowTime.AddDays(-40);
             string strPreDate = preTime.ToString("yyyy-MM-dd");
+            string strPreBettingDate = preBettingTime.ToString("yyyy-MM-dd");
 
             DateTime yesterdayTime = nowTime.AddDays(-1);
             string strYesterday = yesterdayTime.ToString("yyyy-MM-dd");
@@ -512,13 +485,14 @@ namespace LSportsServer
             DataRowCollection list = CMySql.GetDataQuery(sql);
             Console.WriteLine(list.Count);
 
-            string strDeleteChild = $"DELETE FROM tb_child WHERE sn = 0";
-            string strDeleteSubChild = $"DELETE FROM tb_subchild WHERE child_sn = 0";
-            string strDeleteScore = $"DELETE FROM tb_score WHERE game_sn = 0";
-
+            List<string> lstSql = new List<string>();
             
             if (list.Count > 0)
             {
+                string strDeleteChild = $"DELETE FROM tb_child WHERE sn = 0";
+                string strDeleteSubChild = $"DELETE FROM tb_subchild WHERE child_sn = 0";
+                string strDeleteScore = $"DELETE FROM tb_score WHERE game_sn = 0";
+                
                 foreach (DataRow info in list)
                 {
                     int nChildSn = CGlobal.ParseInt(info["sn"]);
@@ -531,28 +505,40 @@ namespace LSportsServer
                     CGlobal.RemoveGameAtFixtureID(nFixtureID);
                 }
 
-                CMySql.ExcuteQuery(strDeleteChild);
-                CMySql.ExcuteQuery(strDeleteSubChild);
-                CMySql.ExcuteQuery(strDeleteScore);
+                lstSql.Add(strDeleteChild);
+                lstSql.Add(strDeleteSubChild);
+                lstSql.Add(strDeleteScore);
+
+                CMySql.ExcuteQueryList(lstSql);
+                lstSql.Clear();
             }
 
             sql = $"DELETE FROM tb_kenosadari_result WHERE gameDate < '{strPreDate}'";
-            CMySql.ExcuteQuery(sql);
+            lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_powerball_result WHERE game_date < '{strPreDate}'";
-            CMySql.ExcuteQuery(sql);
+            lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_powersadari_result WHERE gameDate < '{strPreDate}'";
-            CMySql.ExcuteQuery(sql);
+            lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_total_betting WHERE tb_total_betting.betting_no IN (SELECT tb_total_cart.betting_no FROM tb_total_cart WHERE tb_total_cart.bet_date < '{strPreDate} 00:00:00')";
-            CMySql.ExcuteQuery(sql);
+            sql = $"DELETE FROM tb_total_betting WHERE tb_total_betting.betting_no IN (SELECT tb_total_cart.betting_no FROM tb_total_cart WHERE tb_total_cart.bet_date < '{strPreBettingDate} 00:00:00')";
+            lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_total_cart WHERE bet_date < '{strPreDate} 00:00:00'";
-            CMySql.ExcuteQuery(sql);
+            sql = $"DELETE FROM tb_total_betting_cancel WHERE tb_total_betting_cancel.betting_no IN (SELECT tb_total_cart_cancel.betting_no FROM tb_total_cart_cancel WHERE tb_total_cart_cancel.bet_date < '{strPreBettingDate} 00:00:00')";
+            lstSql.Add(sql);
+
+            sql = $"DELETE FROM tb_total_cart WHERE bet_date < '{strPreBettingDate} 00:00:00'";
+            lstSql.Add(sql);
+
+            sql = $"DELETE FROM tb_total_cart_cancel WHERE bet_date < '{strPreBettingDate} 00:00:00'";
+            lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_score WHERE strTime < '{ strYesterday } 00:00:00'";
-            CMySql.ExcuteQuery(sql);
+            lstSql.Add(sql);
+
+            CMySql.ExcuteQueryList(lstSql);
+            lstSql.Clear();
         }
 
         

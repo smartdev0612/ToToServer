@@ -24,6 +24,7 @@ namespace LSportsServer
 
         private static CGameServer _wsServer;
 
+        public static object _objLock = new object();
 
         public static void InitProcess()
         {
@@ -44,12 +45,12 @@ namespace LSportsServer
             _lstlnGetApiFixtureID = new List<long>();
             _lstlnGetLiveFixtureID = new List<long>();
 
-
             LoadInfoFromDB();
 
+            new Thread(CMySql.ExcuteCommonQuery).Start();
             
             CLSports.Connect();
-            //CPowerball.StartPowerball();
+            // CPowerball.StartPowerball();
             CEngine.StartRealProcess();
             CServer.Start();
         }
@@ -166,17 +167,30 @@ namespace LSportsServer
 
         public static void AddGameInfo(CGame clsInfo)
         {
-            _lstGame.Add(clsInfo);
+            lock(_lstGame)
+            {
+                if(_lstGame.Exists(value=>value.m_nFixtureID == clsInfo.m_nFixtureID) == false)
+                {
+                    _lstGame.Add(clsInfo);
+                }
+            }
+            
         }
 
         public static void RemoveGame(CGame clsInfo)
         {
-            _lstGame.Remove(clsInfo);
+            lock (_lstGame)
+            {
+                _lstGame.Remove(clsInfo);
+            }
         }
 
         public static void RemoveGameAtFixtureID(long nFixtureID)
         {
-            _lstGame.RemoveAll(value => value.m_nFixtureID == nFixtureID);
+            lock (_lstGame)
+            {
+                _lstGame.RemoveAll(value => value.m_nFixtureID == nFixtureID);
+            }
         }
 
         public static void AddLSportsPacket(int nFlag, string strPacket)
@@ -324,6 +338,18 @@ namespace LSportsServer
             try
             {
                 return Convert.ToInt32(value);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public static long ParseInt64<T>(T value)
+        {
+            try
+            {
+                return Convert.ToInt64(value);
             }
             catch
             {

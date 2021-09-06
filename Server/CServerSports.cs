@@ -1137,7 +1137,7 @@ namespace LSportsServer
                 CGame clsGame = lstGame[i];
                 CLSportsPacket sendPacket = new CLSportsPacket();
 
-                sendPacket.m_nGame = clsGame.m_nCode;
+                sendPacket.m_nGame = (int)clsGame.m_nCode;
                 sendPacket.m_nFixtureID = clsGame.m_nFixtureID;
                 sendPacket.m_nSports = clsGame.m_nSports;
                 sendPacket.m_strSportName = CGlobal.GetSportsInfoByCode(clsGame.m_nSports).m_strKo;

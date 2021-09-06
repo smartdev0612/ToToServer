@@ -88,12 +88,12 @@ namespace LSportsServer
 
         public List<CBetRate> GetPrematchBetRateList()
         {
-            return m_lstPrematchBetRate.ToList();
+            return m_lstPrematchBetRate;
         }
 
         public List<CBetRate> GetLiveBetRateList()
         {
-            return m_lstLiveBetRate.ToList();
+            return m_lstLiveBetRate;
         }
 
         public void SetLiveFlag()
@@ -184,10 +184,10 @@ namespace LSportsServer
                 //결과처리가 다 되였다.
                 CEntry.SaveGameInfoToDB(this);
 
-                foreach(CScore score in m_lstScore)
+                /* foreach(CScore score in m_lstScore)
                 {
                     CEntry.SaveScoreInfoToDB(score);
-                }
+                } */
 
                 if(this.IsFinishAllRate())
                 {
@@ -288,7 +288,11 @@ namespace LSportsServer
 
             if(m_nCode == 0)
             {
-                m_nCode = CEntry.InsertGameToDB(this);
+                DateTime dtLimit = CMyTime.GetMyTime().AddDays(3);
+                if (startTime < dtLimit)
+                {
+                    m_nCode = CEntry.InsertGameToDB(this);
+                }
             }
 
             if(m_nCode > 0)
@@ -448,6 +452,19 @@ namespace LSportsServer
             CheckFinishGame();
         }
 
+
+        public void AddPrematchBetRate(CBetRate clsRate)
+        {
+            if (m_lstPrematchBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket) == false)
+                m_lstPrematchBetRate.Add(clsRate);
+        }
+
+        public void AddLiveBetRate(CBetRate clsRate)
+        {
+            if (m_lstLiveBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket) == false)
+                m_lstLiveBetRate.Add(clsRate);
+        }
+
         private void UpdateBetRate(JToken objInfo, int nLive, List<string> lstStrApi = null)
         {
             if (objInfo["Providers"] == null || !objInfo["Providers"].HasValues)
@@ -470,7 +487,7 @@ namespace LSportsServer
 
                 CMarket clsMarket = CGlobal.GetMarketInfoByCode(nMarketID);
 
-                //
+                // 라이브는 벳365 배당만 사용
                 if (nLive >= 2 && strApi != "Bet365")
                     continue;
 
@@ -535,7 +552,7 @@ namespace LSportsServer
                     clsBetRate = new CBetRate(this);
                     clsBetRate.m_nMarket = nMarketID;
                     clsBetRate.m_strApi = strApi;
-                    m_lstPrematchBetRate.Add(clsBetRate);
+                    AddPrematchBetRate(clsBetRate);
                 }
             }
             else
@@ -546,7 +563,7 @@ namespace LSportsServer
                     clsBetRate = new CBetRate(this);
                     clsBetRate.m_nMarket = nMarketID;
                     clsBetRate.m_strApi = strApi;
-                    m_lstLiveBetRate.Add(clsBetRate);
+                    AddLiveBetRate(clsBetRate);
                 }
                 if (clsBetRate.m_strApi == string.Empty)
                 {
@@ -563,7 +580,7 @@ namespace LSportsServer
 
             if (nLive < 2)
             {
-                clsBetRate = m_lstPrematchBetRate.Find(value => value.m_nMarket == nMarketID && value.m_strBLine == strBaseLine);
+                clsBetRate = m_lstPrematchBetRate.Find(value => value.m_nMarket == nMarketID && value.m_strBLine == strBaseLine && value.m_strApi == strApi);
                 if (clsBetRate == null)
                 {
                     clsBetRate = new CBetRate(this);
@@ -575,7 +592,7 @@ namespace LSportsServer
             }
             else
             {
-                clsBetRate = m_lstLiveBetRate.Find(value => value.m_nMarket == nMarketID && value.m_strBLine == strBaseLine);
+                clsBetRate = m_lstLiveBetRate.Find(value => value.m_nMarket == nMarketID && value.m_strBLine == strBaseLine && value.m_strApi == strApi);
                 if (clsBetRate == null)
                 {
                     clsBetRate = new CBetRate(this);
@@ -592,6 +609,8 @@ namespace LSportsServer
 
             return clsBetRate;
         }
+
+       
 
         private CBetRate GetBetRateInfoByHBetID(int nMarketID, string strBetID, string strApi, int nLive)
         {
@@ -645,10 +664,32 @@ namespace LSportsServer
 
             if (info.m_nStatus == 3)
             {
-                clsRate.UpdateResult(info);
+                if(this.m_lstPrematchBetRate.Exists(value=>value.m_nMarket == clsRate.m_nMarket && value.m_nCode > 0)
+                || this.m_lstLiveBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket && value.m_nCode > 0))
+                    clsRate.UpdateResult(info);
             }
 
             return bRet;
+        }
+
+        private void CheckOtherApi(CBetInfo info, int nMarket, string strApi, int nLive)
+        {
+            if (nLive < 2)
+            {
+                if (m_lstPrematchBetRate.Exists(value => value.m_nMarket == nMarket && value.m_nStatus < 2 && value.m_strApi != strApi))
+                    info.m_nStatus = 2;
+
+                if (info.m_nStatus < 2)
+                    m_lstPrematchBetRate.FindAll(value => value.m_nMarket == nMarket && value.m_strApi != strApi).ForEach(value => value.m_nStatus = 2);
+            }
+            else
+            {
+                if (m_lstLiveBetRate.Exists(value => value.m_nMarket == nMarket && value.m_nStatus < 2 && value.m_strApi != strApi))
+                    info.m_nStatus = 2;
+
+                if (info.m_nStatus < 2)
+                    m_lstLiveBetRate.FindAll(value => value.m_nMarket == nMarket && value.m_strApi != strApi).ForEach(value => value.m_nStatus = 2);
+            }
         }
 
         //승무패
@@ -671,6 +712,7 @@ namespace LSportsServer
                     continue;
                 }
 
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
@@ -692,6 +734,8 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
@@ -708,9 +752,12 @@ namespace LSportsServer
                 int nPos = strTemp.IndexOf(".");
                 strTemp = strTemp.Substring(nPos);
 
-                if (strTemp != ".5")   //strTemp != ".0" && 
+                if(nMarketID != 236 && nMarketID != 989 && nMarketID != 990 && nMarketID != 991 && nMarketID != 1147 && nMarketID != 1148)
                 {
-                    continue;
+                    if (strTemp != ".5")   //strTemp != ".0" && 
+                    {
+                        continue;
+                    }
                 }
 
                 CBetRate clsBetRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, nLive);
@@ -719,6 +766,7 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
                 int nIndex = -1;
 
                 if (info.m_strName == "Under")
@@ -735,6 +783,7 @@ namespace LSportsServer
                     clsBetRate.m_strALine = info.m_strLine;
                 }
 
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
 
                 double nTScore = m_nHomeScore + m_nAwayScore;
@@ -788,9 +837,12 @@ namespace LSportsServer
                 int nPos = strTemp.IndexOf(".");
                 strTemp = strTemp.Substring(nPos);
 
-                if (strTemp != ".5" && strTemp != ".0")
+                if (nMarketID != 281 && nMarketID != 1149 && nMarketID != 1150 && nMarketID != 1151 && nMarketID != 1152 && nMarketID != 1153)
                 {
-                    continue;
+                    if (strTemp != ".5")   //strTemp != ".0" && 
+                    {
+                        continue;
+                    }
                 }
 
                 CBetRate clsBetRate = GetBetRateInfoByMarketIDAndBaseLine(nMarketID, info.m_strBaseLine, strApi, nLive);
@@ -799,6 +851,8 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
+
                 int nIndex = -1;
 
                 if (info.m_strName == "1")
@@ -818,6 +872,8 @@ namespace LSportsServer
                     nIndex = 1;
                     clsBetRate.m_strALine = info.m_strLine;
                 }
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
@@ -834,7 +890,7 @@ namespace LSportsServer
                 int nPos = strTemp.IndexOf(".");
                 strTemp = strTemp.Substring(nPos);
 
-                if (strTemp != ".5" && strTemp != ".0")
+                if (strTemp != ".5")
                 {
                     continue;
                 }
@@ -845,7 +901,7 @@ namespace LSportsServer
                 {
                     continue;
                 }
-
+               
                 int nIndex = -1;
 
                 if (info.m_strName == "1")
@@ -865,6 +921,9 @@ namespace LSportsServer
                     nIndex = 1;
                     clsBetRate.m_strALine = info.m_strLine;
                 }
+
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
@@ -886,6 +945,8 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
@@ -901,6 +962,8 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(0, info, nLive);
 
                 string[] score = clsBetRate.m_strHName.Trim().Split('-');
@@ -940,6 +1003,8 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(nIndex, info, nLive);
             }
         }
@@ -969,6 +1034,8 @@ namespace LSportsServer
                 {
                     continue;
                 }
+
+                CheckOtherApi(info, nMarketID, strApi, nLive);
                 clsBetRate.UpdateInfo(0, info, nLive);
             }
         }

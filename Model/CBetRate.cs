@@ -100,7 +100,7 @@ namespace LSportsServer
             m_fARate = clsRate.m_fARate;
             m_fHBase = clsRate.m_fHBase;
             m_fDBase = clsRate.m_fDBase;
-            m_fABase = clsRate.m_fDBase;
+            m_fABase = clsRate.m_fABase;
             m_strHLine = clsRate.m_strHLine;
             m_strDLine = clsRate.m_strDLine;
             m_strALine = clsRate.m_strALine;
@@ -213,7 +213,7 @@ namespace LSportsServer
                     m_nStatus = info.m_nStatus;
             }
 
-            ChangeAdminRate();
+            ChangeAdminRate(nLive);
 
             if (m_nStatus > 2)
             {
@@ -224,7 +224,7 @@ namespace LSportsServer
             }
         }
 
-        public void ChangeAdminRate(float fRate = 0.0f)
+        public void ChangeAdminRate(int nLive, float fRate = 0.0f)
         {
             CMarket clsMarket = CGlobal.GetMarketInfoByCode(m_nMarket);
             if (clsMarket.m_nPeriod < m_clsGame.m_nPeriod && m_nStatus < 2)
@@ -248,11 +248,72 @@ namespace LSportsServer
                     m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                 }
             }
-            else if(clsMarket.m_nFamily == 2 || clsMarket.m_nFamily == 7 || clsMarket.m_nFamily == 8 || clsMarket.m_nFamily == 10)
+            else if(clsMarket.m_nFamily == 2 || clsMarket.m_nFamily == 10)
             {
                 if (m_fHRate < 1.1f || m_fARate < 1.1f)
                 {
                     m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                }
+            }
+            else if(clsMarket.m_nFamily == 7 || clsMarket.m_nFamily == 8 || clsMarket.m_nFamily == 9)
+            {
+                if(nLive < 2) // 프리매치
+                {
+                    if (m_clsGame.m_nSports == 154914) // 야구
+                    {
+                        if(m_nMarket == 281 || m_nMarket == 236)    // 핸디캡 (1~5이닝), 언더오버(1~5이닝) 배당을 1.8~2.1 사이만제공
+                        {
+                            if (m_fHRate < 1.8f || m_fHRate > 2.1f || m_fARate < 1.8f || m_fARate > 2.1f)
+                            {
+                                m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                            }
+                        }
+                        else
+                        {
+                            if (m_fHRate < 1.3f || m_fARate < 1.3f)     // 프리매치 야구 전체 핸디캡, 언더오버 배당 1.3이하 삭제
+                            {
+                                m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                            }
+                        }
+                    }
+                    else if (m_clsGame.m_nSports == 154830) // 배구
+                    {
+                        if (m_fHRate < 1.8f || m_fHRate > 1.95f || m_fARate < 1.8f || m_fARate > 1.95f)
+                        {
+                            m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                        }
+                    }
+                    else if (m_clsGame.m_nSports == 687890) // 이스포츠
+                    {
+                        if (m_nMarket == 989 || m_nMarket == 990 || m_nMarket == 991 || m_nMarket == 1147 || m_nMarket == 1148 || m_nMarket == 1149 || m_nMarket == 1150 || m_nMarket == 1151 || m_nMarket == 1152 || m_nMarket == 1153)
+                        {
+                            if (m_fHRate < 1.8f || m_fHRate > 2.1f || m_fARate < 1.8f || m_fARate > 2.1f)
+                            {
+                                m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                            }
+                        }
+                        else
+                        {
+                            if (m_fHRate < 1.1f || m_fARate < 1.1f)
+                            {
+                                m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                            }
+                        } 
+                    }
+                    else
+                    {
+                        if (m_fHRate < 1.1f || m_fARate < 1.1f)
+                        {
+                            m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                        }
+                    }
+                }
+                else // 인플레이
+                {
+                    if (m_fHRate < 1.1f || m_fARate < 1.1f)
+                    {
+                        m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                    }
                 }
             }
             else if(clsMarket.m_nFamily == 11 || clsMarket.m_nFamily == 12 || clsMarket.m_nFamily == 47)
@@ -307,17 +368,18 @@ namespace LSportsServer
                     m_nWin = 3;
             }
             m_nResult = 1;
-            CEntry.SaveBetRateInfoToDB(this);
+
+            // CEntry.SaveBetRateInfoToDB(this);
 
 
-            if (m_nMarket == 3 || m_nMarket == 342 || m_nMarket == 1558)
+            /*if (m_nMarket == 3 || m_nMarket == 342 || m_nMarket == 1558)
             {
                 //핸디캡일때 처리
                 string[] lststrWinTeam = { "Home", "Away", "Draw", "Cancel" };
                 string strHandiWin = lststrWinTeam[nIndex];
                 string query = $"UPDATE tb_child SET handi_winner = '{strHandiWin}' WHERE sn = '{m_clsGame.m_nCode}'";
                 CMySql.ExcuteQuery(query);
-            }
+            }*/
 
             //베팅테이블에서 해당 베팅자료를 얻어온다.
             string sql = $"SELECT tb_total_betting.* FROM tb_total_betting WHERE tb_total_betting.betid = '{info.m_strBetID}' AND result = 0";

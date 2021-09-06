@@ -496,11 +496,15 @@ namespace LSportsServer
                 nWinCode = 2;
             }
 
+            List<string> lstSql = new List<string>();
+
             string sql = $"UPDATE tb_child SET home_score = {nHomeScore},   away_score = {nAwaySocre}, win_team = '{strWinTeam}' WHERE sn = {nChildSn}";
-            CMySql.ExcuteQuery(sql);
+            lstSql.Add(sql);
 
             sql = $"UPDATE tb_subchild SET win = {nWinCode} WHERE child_sn = {nChildSn}";
-            CMySql.ExcuteQuery(sql);
+            lstSql.Add(sql);
+
+            CMySql.ExcuteQueryList(lstSql);
         }
 
         private void SavePowerBallResult()
