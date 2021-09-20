@@ -70,6 +70,7 @@ namespace LSportsServer
             m_nSpecified = CGlobal.ParseInt(info["is_specified_special"]);
             m_nType = CGlobal.ParseInt(info["type"]);
             m_nLive = CGlobal.ParseInt(info["live"]);
+            m_nBlock = CGlobal.ParseInt(info["block"]);
 
             m_bCheck = true;
         }
@@ -80,6 +81,18 @@ namespace LSportsServer
             {
                 return true;
             }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool IsRealTimeGame()
+        {
+            if(m_nSpecial == 3)
+            {
+                return true;
+            } 
             else
             {
                 return false;
@@ -297,6 +310,7 @@ namespace LSportsServer
 
             if(m_nCode > 0)
                 m_bCheck = true;
+
             CheckFinishGame();
         }
         
@@ -361,7 +375,9 @@ namespace LSportsServer
                 m_nAwayScore = CGlobal.ParseInt(lstResult[0]["Value"]);
             }
 
-            CEntry.SaveScoreToDB(this);
+            CGame clsGame = CGlobal.GetGameInfoByFixtureID(this.m_nFixtureID);
+            if(clsGame != null)
+                CEntry.SaveScoreToDB(this);
 
 
             if (objLiveScore["Periods"] == null || !objLiveScore["Periods"].HasValues)
@@ -457,6 +473,15 @@ namespace LSportsServer
         {
             if (m_lstPrematchBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket) == false)
                 m_lstPrematchBetRate.Add(clsRate);
+        }
+
+        public void RemovePrematchBetRate(CBetRate clsRate)
+        {
+            lock(m_lstPrematchBetRate)
+            {
+                if (m_lstPrematchBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket) == false)
+                    m_lstPrematchBetRate.Remove(clsRate);
+            }
         }
 
         public void AddLiveBetRate(CBetRate clsRate)

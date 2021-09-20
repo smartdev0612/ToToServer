@@ -20,17 +20,19 @@ namespace LSportsServer
             base.OnOpen();
             CGlobal.ShowConsole("Browser connect!");
             m_bThread = true;
-            new Thread(() => OnAjaxRequestList(this)).Start();
+            // new Thread(() => OnAjaxRequestList(this)).Start();
         }
 
         protected override void OnClose(CloseEventArgs e)
         {
+            CGlobal.ShowConsole("Browser Close!");
             m_bThread = false;
             base.OnClose(e);
         }
 
         protected override void OnError(ErrorEventArgs e)
         {
+            CGlobal.ShowConsole("Browser Error!");
             m_bThread = false;
             base.OnError(e);
         }
@@ -46,7 +48,7 @@ namespace LSportsServer
             {
                 strPacket = e.Data.ToString();
             }
-
+            CGlobal.ShowConsole(strPacket);
             if (strPacket == "Server")
             {
                 CGlobal.SetBroadcastSocket(this);
@@ -106,7 +108,7 @@ namespace LSportsServer
             WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_PORT));
             wssv.AddWebSocketService<CGameServer>("/");
             wssv.Start();
-
+            CGlobal.ShowConsole("Socket Server Start!");
             WebSocket ws = new WebSocket($"ws://127.0.0.1:{CDefine.SERVER_PORT}");
             ws.OnOpen += Ws_OnOpen;
             ws.OnError += Ws_OnError;
@@ -116,11 +118,13 @@ namespace LSportsServer
 
         private static void Ws_OnClose(object sender, CloseEventArgs e)
         {
+            CGlobal.ShowConsole("Socket Server Closed!");
             (sender as WebSocket).Connect();
         }
 
         private static void Ws_OnError(object sender, ErrorEventArgs e)
         {
+            CGlobal.ShowConsole("Socket Server Error!");
             (sender as WebSocket).Close();
         }
 

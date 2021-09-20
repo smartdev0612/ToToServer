@@ -18,6 +18,7 @@ namespace LSportsServer
         private static List<CPeriod> _lstPeriod;
 
         private static List<CGame> _lstGame;
+        private static List<CBetting> _lstApiBetting;
         private static Queue<string>[] _lstStrLSportsPacket;
         private static List<long> _lstlnGetApiFixtureID;
         private static List<long> _lstlnGetLiveFixtureID;
@@ -37,6 +38,7 @@ namespace LSportsServer
             _lstTeam = new List<CTeam>();
             _lstPeriod = new List<CPeriod>();
             _lstGame = new List<CGame>();
+            _lstApiBetting = new List<CBetting>();
 
             _lstStrLSportsPacket = new Queue<string>[3]
             {
@@ -111,8 +113,66 @@ namespace LSportsServer
             }
             Console.WriteLine($"Period info {_lstPeriod.Count}");
 
+            // API경기들에 배팅한 리력 적재
+            list = CEntry.SelectSportsBetting();
+            foreach (DataRow info in list)
+            {
+                CBetting clsInfo = new CBetting();
+                clsInfo.LoadInfo(info);
+                AddSportsApiBetting(clsInfo);
+            }
+            Console.WriteLine($"Sports API Betting info {_lstApiBetting.Count}");
+
+            // 실시간게임 적재
+            LoadRealtimeGameFromDB();
+
             CEngine.ClearDBThread();
             new Thread(() => CLSports.LoadGameInfoToDB()).Start();
+        }
+
+        public static void LoadRealtimeGameFromDB()
+        {
+            DataRowCollection list = CEntry.SelectRealtimeGame();
+            List<CGame> lstGame = CGlobal.GetGameList();
+            foreach (DataRow row in list)
+            {
+                CGame clsGame = new CGame();
+                if (lstGame.Exists(value => value.m_nFixtureID == CGlobal.ParseInt64(row["game_sn"])) == false)
+                {
+                    clsGame.LoadInfo(row);
+                    CGlobal.AddGameInfo(clsGame);
+
+                    DataRowCollection betRateList = CEntry.SelectBetRate(clsGame.m_nCode);
+                    if (betRateList.Count > 0)
+                    {
+                        foreach (DataRow betRateRow in betRateList)
+                        {
+                            CBetRate clsBetRate = new CBetRate(clsGame);
+                            clsBetRate.LoadInfo(betRateRow);
+                            clsGame.AddPrematchBetRate(clsBetRate);
+                        }
+                    }
+                }
+                else
+                {
+                    clsGame = CGlobal.GetGameInfoByFixtureID(CGlobal.ParseInt64(row["game_sn"]));
+                    if(clsGame != null)
+                    {
+                        clsGame.LoadInfo(row);
+
+                        DataRowCollection betRateList = CEntry.SelectBetRate(clsGame.m_nCode);
+                        if (betRateList.Count > 0)
+                        {
+                            foreach (DataRow betRateRow in betRateList)
+                            {
+                                CBetRate clsBetRate = new CBetRate(clsGame);
+                                clsBetRate.LoadInfo(betRateRow);
+                                clsGame.AddPrematchBetRate(clsBetRate);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public static CSports GetSportsInfoByCode(int nCode)
@@ -135,6 +195,30 @@ namespace LSportsServer
             return _lstLeague.Find(value => value.m_nCode == nCode);
         }
 
+        public static CLeague GetLeagueInfoBySn(int nSn)
+        {
+            return _lstLeague.Find(value => value.m_nSn == nSn);
+        }
+
+        public static void AddLeagueInfo(CLeague clsLeague)
+        {
+            lock(_lstLeague)
+            {
+                if(_lstLeague.Exists(value => value.m_nSn == clsLeague.m_nSn) == false)
+                {
+                    _lstLeague.Add(clsLeague);
+                }
+            }
+        }
+
+        public static void RemoveLeague(CLeague clsLeague)
+        {
+            lock (_lstLeague)
+            {
+                _lstLeague.Remove(clsLeague);
+            }
+        }
+
         public static CMarket GetMarketInfoByCode(int nCode)
         {
             return _lstMarket.Find(value => value.m_nCode == nCode);
@@ -143,6 +227,30 @@ namespace LSportsServer
         public static CTeam GetTeamInfoByCode(int nCode)
         {
             return _lstTeam.Find(value => value.m_nCode == nCode);
+        }
+
+        public static CTeam GetTeamInfoBySn(int nSn)
+        {
+            return _lstTeam.Find(value => value.m_nSn == nSn);
+        }
+
+        public static void RemoveTeam(CTeam clsTeam)
+        {
+            lock (_lstTeam)
+            {
+                _lstTeam.Remove(clsTeam);
+            }
+        }
+
+        public static void AddTeamInfo(CTeam clsTeam)
+        {
+            lock(_lstTeam)
+            {
+                if (_lstTeam.Exists(value => value.m_nSn == clsTeam.m_nSn) == false)
+                {
+                    _lstTeam.Add(clsTeam);
+                }
+            }
         }
 
         public static CGame GetGameInfoByCode(int nCode)
@@ -160,6 +268,50 @@ namespace LSportsServer
             return _lstGame;
         }
 
+        public static List<CBetting> GetSportsApiBettingList()
+        {
+            return _lstApiBetting;
+        }
+
+        public static int GetSportsApiBettingListCount()
+        {
+            return _lstApiBetting.Count;
+        }
+
+        public static CBetting GetSportsApiBettingBySn(int nSn)
+        {
+            return _lstApiBetting.Find(value => value.m_nCode == nSn);
+        }
+
+        public static List<CBetting> GetSportsApiBettingByBetID(string betid)
+        {
+            return _lstApiBetting.FindAll(value => value.m_strBetID == betid);
+        }
+
+        public static List<CBetting> GetSportsApiBettingByBettingNo(string betting_no)
+        {
+            return _lstApiBetting.FindAll(value => value.m_strBettingNo == betting_no);
+        }
+
+        public static void AddSportsApiBetting(CBetting clsBetting)
+        {
+            lock(_lstApiBetting)
+            {
+                if(_lstApiBetting.Exists(value => value.m_nCode == clsBetting.m_nCode) == false)
+                {
+                    _lstApiBetting.Add(clsBetting);
+                } 
+            }
+        }
+
+        public static void RemoveSportsApiBetting(CBetting clsBetting)
+        {
+            lock(_lstApiBetting)
+            {
+                _lstApiBetting.Remove(clsBetting);
+            }
+        }
+
         public static CPeriod GetPeriodInfoByCode(int nSports, int nPeriod)
         {
             return _lstPeriod.Find(value => value.m_nPeriod == nPeriod && value.m_nSports == nSports);
@@ -174,7 +326,6 @@ namespace LSportsServer
                     _lstGame.Add(clsInfo);
                 }
             }
-            
         }
 
         public static void RemoveGame(CGame clsInfo)

@@ -31,6 +31,7 @@ namespace LSportsServer
 
     public class MLeague : MBase
     {
+        public int m_nSn;
         public string m_strEn;
         public string m_strKo;
         public string m_strImg;
@@ -41,6 +42,7 @@ namespace LSportsServer
 
     public class MTeam : MBase
     {
+        public int m_nSn;
         public string m_strEn;
         public string m_strKo;
         public string m_strImg;
@@ -125,6 +127,27 @@ namespace LSportsServer
         public int m_nLive;
         public int m_nWin;
         public int m_nResult;
+        public int m_nViewFlag;
+    }
+
+    public class MBetting : MBase
+    {
+        public int m_nSubChildSn;
+        public int m_nMemberSn;
+        public string m_strBettingNo;
+        public int m_nSelectNo;
+        public float m_fHomeRate;
+        public float m_fAwayRate;
+        public float m_fDrawRate;
+        public float m_fSelectRate;
+        public string m_strBetID;
+        public int m_nGameType;
+        public int m_nResult;
+        public int m_nBetMoney;
+        public int m_nStype;
+        public int m_nPass;
+        public string m_strScore;
+        public int m_nLive;
     }
 
     public class CDataPacket

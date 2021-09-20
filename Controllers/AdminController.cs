@@ -25,9 +25,11 @@ namespace LSportsServer.Controllers
                     case 0x01:      //마켓배당변경
                         ChangeRate(strValue);
                         break;
-
                     case 0x02:      //경기차단
                         BlockGame(strValue);
+                        break;
+                    case 0x03:      //경기차단해제
+                        CancelBlockGame(strValue);
                         break;
                 }
             }
@@ -68,13 +70,24 @@ namespace LSportsServer.Controllers
         {
             JToken param = JObject.Parse(strValue);
             int nChildSn = CGlobal.ParseInt(param["nChildSn"]);
-            int nBlock = CGlobal.ParseInt(param["nBlock"]);
 
             CGame clsGame = CGlobal.GetGameInfoByCode(nChildSn);
             if (clsGame == null)
                 return;
 
-            clsGame.m_nBlock = nBlock;
+            clsGame.m_nBlock = 1;
+        }
+
+        private void CancelBlockGame(string strValue)
+        {
+            JToken param = JObject.Parse(strValue);
+            int nChildSn = CGlobal.ParseInt(param["nChildSn"]);
+
+            CGame clsGame = CGlobal.GetGameInfoByCode(nChildSn);
+            if (clsGame == null)
+                return;
+
+            clsGame.m_nBlock = 0;
         }
     }
 

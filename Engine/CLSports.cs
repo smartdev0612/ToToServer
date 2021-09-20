@@ -129,7 +129,7 @@ namespace LSportsServer
                 if (lstBody.Count == 0)
                     return;
 
-                foreach(JToken objBody in lstBody)
+                foreach (JToken objBody in lstBody)
                 {
                     List<JToken> lstMarket = objBody["Markets"].ToList();
                     if (lstMarket.Count == 0)
@@ -138,6 +138,7 @@ namespace LSportsServer
                     JToken objFixture = JObject.Parse(clsPacket.Fixture);
                     long nFixtureID = Convert.ToInt64(objFixture["FixtureId"]);
                     CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
+
                     if (clsGame == null)
                     {
                         clsGame = new CGame(nFixtureID);
@@ -189,6 +190,8 @@ namespace LSportsServer
                         // CGlobal.ShowConsole("GameFixture");
                         // CGlobal.WriteLogAsync(strPacket);
                         GameFixture(objBody, nFlag);
+                        string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
+                        CGlobal.ShowConsole(strBettingListLog);
                         break;
                     case 2:
                         // CGlobal.ShowConsole("GameScore");
@@ -329,7 +332,7 @@ namespace LSportsServer
         {
             while(true)
             {
-                string sql = "SELECT tbl_temp.* FROM (SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_subchild.* FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result = 0 AND tb_total_betting.betid <> '' UNION SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_subchild.* FROM tb_subchild LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_subchild.status < 3 AND tb_child.special < 5) tbl_temp WHERE tbl_temp.game_sn IS NOT NULL GROUP BY tbl_temp.sn";
+                string sql = "SELECT tbl_temp.* FROM (SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_child.special, tb_subchild.* FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result = 0 AND tb_total_betting.betid <> '' UNION SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_child.special, tb_subchild.* FROM tb_subchild LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_subchild.status < 3 AND tb_child.special < 5) tbl_temp WHERE tbl_temp.game_sn IS NOT NULL GROUP BY tbl_temp.sn";
                 DataRowCollection list = CMySql.GetDataQuery(sql);
 
                 long nOldFixtureId = 0;
@@ -342,6 +345,7 @@ namespace LSportsServer
                     int nChildSn = CGlobal.ParseInt(info["childSn"]);
                     int nChildLive = CGlobal.ParseInt(info["childLive"]);
                     int nLive = CGlobal.ParseInt(info["live"]);
+                    int nSpecial = CGlobal.ParseInt(info["special"]);
                     CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureId);
                     if(clsGame == null)
                     {
@@ -376,8 +380,11 @@ namespace LSportsServer
 
                     if(nOldFixtureId != nFixtureId)
                     {
-                        GetGameInfoFromApi(nFixtureId);
-                        nOldFixtureId = nFixtureId;
+                        if(nSpecial != 3)
+                        {
+                            GetGameInfoFromApi(nFixtureId);
+                            nOldFixtureId = nFixtureId;
+                        }
                     }
                 }
 
@@ -385,7 +392,10 @@ namespace LSportsServer
                 lstGame = lstGame.FindAll(value => value != null && value.m_nStatus >= 2);
                 foreach(CGame clsGame in lstGame)
                 {
-                    GetGameInfoFromApi(clsGame.m_nFixtureID);
+                    if(clsGame.m_nSpecial != 3)
+                    {
+                        GetGameInfoFromApi(clsGame.m_nFixtureID);
+                    }
                 }
 
 
@@ -595,29 +605,58 @@ namespace LSportsServer
             foreach (DataRow info in list)
             {
                 long nFixtureID = Convert.ToInt64(info["game_sn"]);
+                int nSpecial = CGlobal.ParseInt(info["special"]);
                 CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
                 if(clsGame == null)
                 {
                     clsGame = new CGame();
                     clsGame.LoadInfo(info);
                     CGlobal.AddGameInfo(clsGame);
+                    if(nSpecial == 3)
+                    {
+                        DataRowCollection betRateList = CEntry.SelectBetRate(clsGame.m_nCode);
+                        if (betRateList.Count > 0)
+                        {
+                            foreach (DataRow betRateRow in betRateList)
+                            {
+                                CBetRate clsBetRate = new CBetRate(clsGame);
+                                clsBetRate.LoadInfo(betRateRow);
+                                clsGame.AddPrematchBetRate(clsBetRate);
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     clsGame.LoadInfo(info);
+                    if (nSpecial == 3)
+                    {
+                        DataRowCollection betRateList = CEntry.SelectBetRate(clsGame.m_nCode);
+                        if (betRateList.Count > 0)
+                        {
+                            foreach (DataRow betRateRow in betRateList)
+                            {
+                                CBetRate clsBetRate = new CBetRate(clsGame);
+                                clsBetRate.LoadInfo(betRateRow);
+                                clsGame.AddPrematchBetRate(clsBetRate);
+                            }
+                        }
+                    }
                 }
-                
-                if(clsGame.CheckGame())
+
+                if (nSpecial != 3)
                 {
-                    GetGameInfoFromApi(clsGame.m_nFixtureID);
-                    CGlobal.ShowConsole($"Loading {clsGame.m_nFixtureID} game! *************************");
-                    Thread.Sleep(300);
+                    if (clsGame.CheckGame())
+                    {
+                        GetGameInfoFromApi(clsGame.m_nFixtureID);
+                        CGlobal.ShowConsole($"Loading {clsGame.m_nFixtureID} game! *************************");
+                        Thread.Sleep(300);
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
-                else
-                {
-                    continue;
-                }
-                    
             }
 
             while(true)
@@ -632,9 +671,12 @@ namespace LSportsServer
                         if (clsInfo == null)
                             continue;
 
-                        GetGameInfoFromApi(clsInfo.m_nFixtureID);
-                        CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
-                        Thread.Sleep(1000);
+                        if(clsInfo.m_nSpecial != 3)
+                        {
+                            GetGameInfoFromApi(clsInfo.m_nFixtureID);
+                            CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
+                            Thread.Sleep(1000);
+                        }
                     }
                 }
                 catch(Exception err)

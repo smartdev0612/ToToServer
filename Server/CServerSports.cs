@@ -18,7 +18,12 @@ namespace LSportsServer
             switch (packet.m_nPacketCode)
             {
                 case CDefine.PACKET_SPORT_LIST:
+                    CGlobal.ShowConsole("- Sports LIST Request");
                     OnRequestList(packet.m_strPacket);
+                    break;
+                case CDefine.PACKET_SPORT_AJAX:
+                    CGlobal.ShowConsole("- Sports AJAX Request");
+                    OnAjaxRequestList(packet.m_strPacket);
                     break;
                 case CDefine.PACKET_SPORT_BET:
                     try
@@ -214,6 +219,8 @@ namespace LSportsServer
                     clsRate = clsGame.GetPreRateInfoByBetID(betId);
                 else if (_gameType == "live")
                     clsRate = clsGame.GetLiveRateInfoByBetID(betId);
+                else if (_gameType == "realtime")
+                    clsRate = clsGame.GetPreRateInfoByBetID(betId);
 
                 if (clsRate == null)
                 {
@@ -507,6 +514,11 @@ namespace LSportsServer
                         nty = 3;
                         strType = "라이브";
                     }
+                    else if (_gameType == "realtime")
+                    {
+                        nty = 4;
+                        strType = "실시간";
+                    }
 
                     int sport_id = CGlobal.ParseInt(lstChild[0]["sport_id"]);
                     string strSportName = Convert.ToString(lstChild[0]["sport_name"]);
@@ -606,6 +618,8 @@ namespace LSportsServer
                     clsRate = clsGame.GetPreRateInfoByBetID(betId);
                 else if (_gameType == "abroad")
                     clsRate = clsGame.GetPreRateInfoByBetID(betId);
+                else if (_gameType == "realtime")
+                    clsRate = clsGame.GetPreRateInfoByBetID(betId);
                 else if (_gameType == "live")
                     clsRate = clsGame.GetLiveRateInfoByBetID(betId);
 
@@ -686,6 +700,8 @@ namespace LSportsServer
                         clsRate = clsGame.GetPrematchBetRateList().Find(value => value.m_nCode == subChildSn);
                     else if (_gameType == "abroad")
                         clsRate = clsGame.GetPrematchBetRateList().Find(value => value.m_nCode == subChildSn);
+                    else if (_gameType == "realtime")
+                        clsRate = clsGame.GetPrematchBetRateList().Find(value => value.m_nCode == subChildSn);
                     else if (_gameType == "live")
                         clsRate = clsGame.GetLiveBetRateList().Find(value => value.m_nCode == subChildSn);
 
@@ -701,7 +717,28 @@ namespace LSportsServer
 
                     sql = $"insert into tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,s_type,betid, score, live) ";
                     sql += $"values({subChildSn}, {nUser}, '{protoId}', {selected}, {rate1}, {rate2}, {rate3}, {selectedRate}, {gameType}, 0, 0, '{buy}', {betting}, 1, '{betid}', '{score}', {live})";
-                    CMySql.ExcuteQuery(sql);
+                    int nSn = CMySql.ExcuteQuery(sql);
+
+                    CBetting clsBetting = new CBetting();
+                    clsBetting.m_nCode = nSn;
+                    clsBetting.m_nSubChildSn = subChildSn;
+                    clsBetting.m_nMemberSn = nUser;
+                    clsBetting.m_strBettingNo = protoId;
+                    clsBetting.m_nSelectNo = selected;
+                    clsBetting.m_fHomeRate = rate1;
+                    clsBetting.m_fDrawRate = rate2;
+                    clsBetting.m_fAwayRate = rate3;
+                    clsBetting.m_fSelectRate = Convert.ToSingle(selectedRate);
+                    clsBetting.m_strBetID = Convert.ToString(betid);
+                    clsBetting.m_nGameType = gameType;
+                    clsBetting.m_nResult = 0;
+                    clsBetting.m_nBetMoney = betting;
+                    clsBetting.m_nStype = 1;
+                    clsBetting.m_nPass = 0;
+                    clsBetting.m_strScore = score;
+                    clsBetting.m_nLive = 0;
+
+                    CGlobal.AddSportsApiBetting(clsBetting);
                 }
             }
 
@@ -765,6 +802,8 @@ namespace LSportsServer
                     {
                         if (_gameType == "live")
                             sql = $"update tb_alarm_flag set betting_live_big = betting_live_big + 1 where idx = 1";
+                        else if (_gameType == "realtime")
+                            sql = $"update tb_alarm_flag set betting_realtime_big = betting_realtime_big + 1 where idx = 1";
                         else
                             sql = $"update tb_alarm_flag set betting_sport_big = betting_sport_big + 1 where idx = 1";
                     }
@@ -772,6 +811,8 @@ namespace LSportsServer
                     {
                         if (_gameType == "live")
                             sql = $"update tb_alarm_flag set betting_live = betting_live + 1 where idx = 1";
+                        else if (_gameType == "realtime")
+                            sql = $"update tb_alarm_flag set betting_realtime = betting_realtime + 1 where idx = 1";
                         else
                             sql = $"update tb_alarm_flag set betting_sport = betting_sport + 1 where idx = 1";
                     }
@@ -800,6 +841,8 @@ namespace LSportsServer
                 nType = 2;
             else if (strGameType == "live")
                 nType = 3;
+            else if (strGameType == "realtime")
+                nType = 4;
 
             string sql = $"SELECT * FROM tb_cross_limit WHERE type_id = {nType}";
             DataRowCollection list = CMySql.GetDataQuery(sql);
@@ -1019,6 +1062,12 @@ namespace LSportsServer
             SendGameListPacket(CDefine.PACKET_SPORT_LIST);
         }
 
+        private void OnAjaxRequestList(string strPacket)
+        {
+            m_reqParam = JsonConvert.DeserializeObject<CLSportsReqList>(strPacket);
+            SendGameListPacket(CDefine.PACKET_SPORT_AJAX);
+        }
+
         public void SendGameListPacket(int nPacketCode)
         {
             List<CGame> lstGame = null;
@@ -1079,15 +1128,31 @@ namespace LSportsServer
             {
                 try
                 {
-                    lstGame = lstGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
-                    lstGame = lstGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
-                                                && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose(value.m_nSports))
-                                                && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose(value.m_nSports)).m_nStatus < 2);
+                    if(m_reqParam.m_nLive == 3)
+                    {
+                        lstGame = lstGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
+                        lstGame = lstGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
+                                                    && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose(value.m_nSports))
+                                                    && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose(value.m_nSports)).m_nStatus < 2 && value.IsRealTimeGame() == true);
 
-                    totalGame = totalGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
-                    totalGame = totalGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
-                                                && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose(value.m_nSports))
-                                                && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose(value.m_nSports)).m_nStatus < 2);
+                        totalGame = totalGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
+                        totalGame = totalGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
+                                                    && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose(value.m_nSports))
+                                                    && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose(value.m_nSports)).m_nStatus < 2 && value.IsRealTimeGame() == true);
+                    } 
+                    else
+                    {
+                        lstGame = lstGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
+                        lstGame = lstGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
+                                                    && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose(value.m_nSports))
+                                                    && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose(value.m_nSports)).m_nStatus < 2 && value.IsRealTimeGame() == false);
+
+                        totalGame = totalGame.FindAll(value => value.CheckLive() == false || value.m_nStatus == 9);
+                        totalGame = totalGame.FindAll(value => value.GetGameDateTime() > CMyTime.GetMyTime().AddSeconds(-5)
+                                                    && value.GetPrematchBetRateList().Exists(val => val.CheckWinDrawLose(value.m_nSports))
+                                                    && value.GetPrematchBetRateList().Find(val => val.CheckWinDrawLose(value.m_nSports)).m_nStatus < 2 && value.IsRealTimeGame() == false);
+                    }
+                    
                 }
                 catch (Exception err)
                 {
@@ -1095,7 +1160,6 @@ namespace LSportsServer
                     return;
                 }
             }
-
 
             List<CLSportsPacket> lstSendPacket = new List<CLSportsPacket>();
 
@@ -1116,7 +1180,7 @@ namespace LSportsServer
                 lstGame = lstGame.FindAll(info=> info.GetPrematchBetRateList().Exists(value => (value.m_nStatus == 1 && value.CheckWinDrawLose(info.m_nSports)) && lstFilter1.ToList().Exists(val => val == value.m_nMarket)));
                 totalGame = totalGame.FindAll(info => info.GetPrematchBetRateList().Exists(value => (value.m_nStatus == 1 && value.CheckWinDrawLose(info.m_nSports)) && lstFilter1.ToList().Exists(val => val == value.m_nMarket)));
             }
-            else if (m_reqParam.m_nLive == 1)
+            else if (m_reqParam.m_nLive == 1 || m_reqParam.m_nLive == 3)
             {
                 lstGame = lstGame.FindAll(info => info.GetPrematchBetRateList().Exists(value => (value.m_nStatus == 1 && value.CheckWinDrawLose(info.m_nSports))));
                 totalGame = totalGame.FindAll(info => info.GetPrematchBetRateList().Exists(value => (value.m_nStatus == 1 && value.CheckWinDrawLose(info.m_nSports))));
@@ -1142,10 +1206,26 @@ namespace LSportsServer
                 sendPacket.m_nSports = clsGame.m_nSports;
                 sendPacket.m_strSportName = CGlobal.GetSportsInfoByCode(clsGame.m_nSports).m_strKo;
                 sendPacket.m_nLeague = clsGame.m_nLeague;
-                sendPacket.m_strLeagueName = CGlobal.GetLeagueInfoByCode(clsGame.m_nLeague).m_strKo;
-                sendPacket.m_strLeagueImg = CGlobal.GetLeagueInfoByCode(clsGame.m_nLeague).m_strImg;
-                sendPacket.m_strHomeTeam = CGlobal.GetTeamInfoByCode(clsGame.m_nHomeTeam).m_strKo;
-                sendPacket.m_strAwayTeam = CGlobal.GetTeamInfoByCode(clsGame.m_nAwayTeam).m_strKo;
+
+                CLeague clsLeague = CGlobal.GetLeagueInfoByCode(clsGame.m_nLeague);
+                if (clsLeague == null)
+                    continue;
+
+                sendPacket.m_strLeagueName = clsLeague.m_strKo;
+                sendPacket.m_strLeagueImg = clsLeague.m_strImg;
+
+                CTeam clsTeam = CGlobal.GetTeamInfoByCode(clsGame.m_nHomeTeam);
+                if (clsTeam == null)
+                    continue;
+
+                sendPacket.m_strHomeTeam = clsTeam.m_strKo;
+
+                clsTeam = CGlobal.GetTeamInfoByCode(clsGame.m_nAwayTeam);
+                if (clsTeam == null)
+                    continue;
+
+                sendPacket.m_strAwayTeam = clsTeam.m_strKo;
+
                 sendPacket.m_strDate = clsGame.m_strDate;
                 sendPacket.m_strHour = clsGame.m_strHour;
                 sendPacket.m_strMin = clsGame.m_strMin;
@@ -1168,7 +1248,7 @@ namespace LSportsServer
                     lstBetRate = clsGame.GetPrematchBetRateList();
                     lstBetRate = lstBetRate.FindAll(value => (value.m_nStatus == 1 || value.CheckWinDrawLose(clsGame.m_nSports)) && lstFilter1.ToList().Exists(val => val == value.m_nMarket));
                 }
-                else if(m_reqParam.m_nLive == 1)
+                else if(m_reqParam.m_nLive == 1 || m_reqParam.m_nLive == 3)
                 {
                     lstBetRate = clsGame.GetPrematchBetRateList();
                     lstBetRate = lstBetRate.FindAll(value => (value.m_nStatus == 1 || value.CheckWinDrawLose(clsGame.m_nSports)));
@@ -1242,6 +1322,7 @@ namespace LSportsServer
                 lstSendPacket.Add(sendPacket);
             }
 
+            CGlobal.ShowConsole("* Sent Game List Packet!");
             ReturnPacket(nPacketCode, JsonConvert.SerializeObject(lstSendPacket), 0);
         }
         

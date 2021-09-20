@@ -69,6 +69,7 @@ namespace LSportsServer
             string sql = string.Empty;
             int leagueSn = 0;
             int specialCode = 0;
+            int moneyLimitOption = 0;
             if (btGameName == "powerball")
             {
                 specialCode = 7;
@@ -80,6 +81,15 @@ namespace LSportsServer
                     return;
                 }
                 leagueSn = CGlobal.ParseInt(CMySql.GetDataQuery(sql)[0]["sn"]);
+
+                sql = "SELECT power_money_limit FROM tb_mini_setting LIMIT 1";
+                DataRowCollection listRow = CMySql.GetDataQuery(sql);
+                if (listRow.Count == 0)
+                {
+                    ReturnPacket(nRetCode, "파워볼 미니게임 제한정보를 찾을수 없습니다.", 1);
+                    return;
+                }
+                moneyLimitOption = CGlobal.ParseInt(CMySql.GetDataQuery(sql)[0]["power_money_limit"]);
             }
             else if (btGameName == "powersadari")
             {
@@ -92,6 +102,15 @@ namespace LSportsServer
                     return;
                 }
                 leagueSn = CGlobal.ParseInt(CMySql.GetDataQuery(sql)[0]["sn"]);
+
+                sql = "SELECT powersadari_money_limit FROM tb_mini_setting LIMIT 1";
+                DataRowCollection listRow = CMySql.GetDataQuery(sql);
+                if (listRow.Count == 0)
+                {
+                    ReturnPacket(nRetCode, "파워사다리 미니게임 제한정보를 찾을수 없습니다.", 1);
+                    return;
+                }
+                moneyLimitOption = CGlobal.ParseInt(CMySql.GetDataQuery(sql)[0]["powersadari_money_limit"]);
             }
 
             //-> 배팅 들어온 게임이 DB에 존재하는지 확인하고 없으면 Insert 한다.
@@ -124,12 +143,13 @@ namespace LSportsServer
             {
                 sql = $"select * from tb_league where sn = {leagueSn}";
                 DataRowCollection lstLeague = CMySql.GetDataQuery(sql);
+                int lsports_league_sn = lstLeague.Count == 0 ? 0 : CGlobal.ParseInt(lstLeague[0]["lsports_league_sn"]);
                 string strLeagueName = lstLeague.Count == 0 ? string.Empty : Convert.ToString(lstLeague[0]["name"]);
                 //-> 경기등록
-                sql = $"insert into tb_child(sport_name, league_sn, home_team, away_team, gameDate, gameHour, gameTime, kubun, type, special, game_code, game_th, notice) values ('기타', '{leagueSn}', '{homeTeam}', '{awayTeam}', '{gameDate}', '{gameHour}', '{gameTime}', '0', '1', '{specialCode}', '{gameCode}', '{btGameTh}', '{strLeagueName}');";
+                sql = $"insert into tb_child(sport_name, league_sn, home_team, away_team, gameDate, gameHour, gameTime, kubun, type, special, game_code, game_th, notice) values ('기타', '{lsports_league_sn}', '{homeTeam}', '{awayTeam}', '{gameDate}', '{gameHour}', '{gameTime}', '0', '1', '{specialCode}', '{gameCode}', '{btGameTh}', '{strLeagueName}');";
                 int childSn = (int)CMySql.ExcuteQuery(sql);
 
-                sql = $"insert into tb_subchild(child_sn, betting_type, home_rate, draw_rate, away_rate) values ('{childSn}','1','{info.homeRate}','{info.drawRate}','{info.awayRate}')";
+                sql = $"insert into tb_subchild(child_sn, betting_type, home_rate, draw_rate, away_rate, strTime) values ('{childSn}','1','{info.homeRate}','{info.drawRate}','{info.awayRate}', '{CMyTime.GetMyTimeStr()}')";
                 CMySql.ExcuteQuery(sql);
             }
 
@@ -177,7 +197,14 @@ namespace LSportsServer
             }
 
             int sumBetMoney = 0;    // 미니게임 한개 회차에서 한 메뉴에 배팅한 총 금액
-            sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_betting.member_sn = '{nUser}'";
+            if (moneyLimitOption == 0)  // 픽별 배팅한도
+            {
+                sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_betting.member_sn = '{nUser}'";
+            } 
+            else                        // 회차별 배팅한도
+            {
+                sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.member_sn = '{nUser}'";
+            }
             DataRowCollection rowList = CMySql.GetDataQuery(sql);
             if (rowList.Count > 0)
             {
@@ -186,12 +213,28 @@ namespace LSportsServer
 
             if((btMoney + sumBetMoney) > maxBetMoney)
             {
-                ReturnPacket(nRetCode, $"한 회차 한 메뉴 배팅금액은 최대 ${maxBetMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
+                string strMsg = "";
+                if(moneyLimitOption == 0)
+                {
+                    strMsg = $"한 회차 한 메뉴 배팅금액은 최대 ${maxBetMoney.ToString("N0")}원을 넘을수 없습니다.";
+                }
+                else
+                {
+                    strMsg = $"한 회차 배팅금액은 최대 ${maxBetMoney.ToString("N0")}원을 넘을수 없습니다.";
+                }
+                ReturnPacket(nRetCode, strMsg, 1);
                 return;
             }
 
             int sumResultMoney = 0;    // 미니게임 한개 회차에 한 메뉴에 당첨한 총 금액
-            sql = $"SELECT IFNULL(SUM(tb_total_cart.result_money), 0) AS sumResultMoney FROM tb_total_cart LEFT JOIN tb_total_betting ON tb_total_cart.betting_no = tb_total_betting.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_cart.member_sn = '{nUser}'";
+            if (moneyLimitOption == 0)  // 픽별 배팅한도
+            {
+                sql = $"SELECT IFNULL(SUM(tb_total_cart.betting_money * tb_total_cart.result_rate), 0) AS sumResultMoney FROM tb_total_cart LEFT JOIN tb_total_betting ON tb_total_cart.betting_no = tb_total_betting.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_cart.member_sn = '{nUser}'";
+            }
+            else                        // 회차별 배팅한도
+            {
+                sql = $"SELECT IFNULL(SUM(tb_total_cart.betting_money * tb_total_cart.result_rate), 0) AS sumResultMoney FROM tb_total_cart LEFT JOIN tb_total_betting ON tb_total_cart.betting_no = tb_total_betting.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_total_cart.member_sn = '{nUser}'";
+            }
             rowList = CMySql.GetDataQuery(sql);
             if (rowList.Count > 0)
             {
@@ -200,7 +243,16 @@ namespace LSportsServer
 
             if ((bettingBonusMoney + sumResultMoney) > maxBnsMoney)
             {
-                ReturnPacket(nRetCode, $"한 회차 한 메뉴 적중금액은 최대 ${maxBnsMoney.ToString("N0")}원을 넘을수 없습니다.", 1);
+                string strMsg = "";
+                if (moneyLimitOption == 0)
+                {
+                    strMsg = $"한 회차 한 메뉴 적중금액은 최대 ${maxBnsMoney.ToString("N0")}원을 넘을수 없습니다.";
+                }
+                else
+                {
+                    strMsg = $"한 회차 적중금액은 최대 ${maxBnsMoney.ToString("N0")}원을 넘을수 없습니다.";
+                }
+                ReturnPacket(nRetCode, strMsg, 1);
                 return;
             }
 

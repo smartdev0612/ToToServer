@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace LSportsServer
@@ -53,6 +54,7 @@ namespace LSportsServer
             m_nLive = CGlobal.ParseInt(info["live"]);
             m_nWin = CGlobal.ParseInt(info["win"]);
             m_nResult = CGlobal.ParseInt(info["result"]);
+            m_nViewFlag = CGlobal.ParseInt(info["view_flag"]);
         }
 
         public bool CheckWinDrawLose(int nSports)
@@ -113,6 +115,7 @@ namespace LSportsServer
             m_nLive = clsRate.m_nLive;
             m_nWin = clsRate.m_nWin;
             m_nResult = clsRate.m_nResult;
+            m_nViewFlag = clsRate.m_nViewFlag;
         }
 
         private int GetFamily()
@@ -382,36 +385,47 @@ namespace LSportsServer
             }*/
 
             //베팅테이블에서 해당 베팅자료를 얻어온다.
-            string sql = $"SELECT tb_total_betting.* FROM tb_total_betting WHERE tb_total_betting.betid = '{info.m_strBetID}' AND result = 0";
+            /* string sql = $"SELECT tb_total_betting.* FROM tb_total_betting WHERE tb_total_betting.betid = '{info.m_strBetID}' AND result = 0";
             DataRowCollection list = CMySql.GetDataQuery(sql);
             if (list.Count == 0)
             {
                 return;
-            }
+            } */
 
-            int nResult = info.m_nSettlement;
-            if (nResult == 2)
-                nResult = 1;
-            else if (nResult == 1)
-                nResult = 2;
-            else if (nResult == -1)
-                nResult = 4;
-            else if (nResult == 3)
-                nResult = 4;
-
-            foreach (DataRow betInfo in list)
+            List<CBetting> lstBetting = new List<CBetting>();
+            lstBetting = CGlobal.GetSportsApiBettingByBetID(info.m_strBetID);
+            if(lstBetting.Count > 0)
             {
-                int nBetResult = nResult;
-                if (Convert.ToString(betInfo["home_rate"]) == "1.00" && Convert.ToString(betInfo["away_rate"]) == "1.00" && Convert.ToString(betInfo["draw_rate"]) == "1.00")
+                foreach(CBetting clsBetting in lstBetting)
                 {
-                    nBetResult = 4;
-                }
-                int nSn = CGlobal.ParseInt(betInfo["sn"]);
-                sql = $"UPDATE tb_total_betting SET result = {nBetResult} WHERE sn = {nSn}";
-                CMySql.ExcuteQuery(sql);
+                    int nResult = info.m_nSettlement;
+                    if (nResult == 2)
+                        nResult = 1;
+                    else if (nResult == 1)
+                        nResult = 2;
+                    else if (nResult == -1)
+                        nResult = 4;
+                    else if (nResult == 3)
+                        nResult = 4;
 
-                CResult.CalculateSportResult(nSn);
+                    int nBetResult = nResult;
+                    if (Convert.ToString(clsBetting.m_fHomeRate) == "1.00" && Convert.ToString(clsBetting.m_fAwayRate) == "1.00" && Convert.ToString(clsBetting.m_fDrawRate) == "1.00")
+                    {
+                        nBetResult = 4;
+                    }
+                    int nSn = CGlobal.ParseInt(clsBetting.m_nCode);
+                    string sql = $"UPDATE tb_total_betting SET result = {nBetResult} WHERE sn = {nSn}";
+                    CMySql.ExcuteQuery(sql);
+
+                    if (nBetResult > 0)
+                    {
+                        CGlobal.RemoveSportsApiBetting(clsBetting);
+                    }
+
+                    CResult.CalculateSportResult(nSn);
+                }
             }
+
         }
 
         public void InsertBetRateToDB()

@@ -16,6 +16,7 @@ namespace LSportsServer
         public void LoadInfo(DataRow info)
         {
             m_nCode = CGlobal.ParseInt(info["Team_Id"]);
+            m_nSn = CGlobal.ParseInt(info["t_idx"]);
             m_strKo = Convert.ToString(info["Team_Name_Kor"]).Replace("'", " ").Trim();
             m_strEn = Convert.ToString(info["Team_Name"]).Replace("'", " ").Trim();
             m_nSports = CGlobal.ParseInt(info["Sport_Id"]);

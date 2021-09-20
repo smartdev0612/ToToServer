@@ -58,11 +58,28 @@ namespace LSportsServer
 
         public static DataRowCollection SelectGame()
         {
-            string sql = "SELECT * FROM tb_child WHERE status < 3 AND sport_id > 0 AND sport_id IS NOT NULL ORDER BY gameDate, gameHour, gameTime";
+            string sql = "SELECT * FROM tb_child WHERE status < 3 AND sport_id > 0 AND sport_id IS NOT NULL AND special != 3 ORDER BY gameDate, gameHour, gameTime";
             DataRowCollection list = CMySql.GetDataQuery(sql);
 
             return list;
         }
+
+        public static DataRowCollection SelectSportsBetting()
+        {
+            string sql = "SELECT * FROM tb_total_betting WHERE betid != '' AND result = 0";
+            DataRowCollection list = CMySql.GetDataQuery(sql);
+
+            return list;
+        }
+
+        public static DataRowCollection SelectRealtimeGame()
+        {
+            string sql = "SELECT * FROM tb_child WHERE status < 3 AND sport_id > 0 AND sport_id IS NOT NULL AND special = 3 ORDER BY gameDate, gameHour, gameTime";
+            DataRowCollection list = CMySql.GetDataQuery(sql);
+
+            return list;
+        }
+
         public static DataRowCollection SelectBetRate(int nGame)
         {
             string sql = $"SELECT * FROM tb_subchild WHERE child_sn = {nGame}";
@@ -89,7 +106,7 @@ namespace LSportsServer
             } 
             else
             {
-                sql = $"INSERT INTO tb_child(game_sn, sport_id, sport_name_en, sport_name, league_sn, notice_en, notice, home_team_id, home_team_en, home_team, away_team_id, away_team_en, away_team, gameDate, gameHour, gameTime, status, kubun, strTime, special, league_img, home_score, away_score, win_team, game_period, is_specified_special, tb_child.type) VALUES({model.m_nFixtureID}, {model.m_nSports}, '{clsSports.m_strEn}', '{clsSports.m_strKo}', {model.m_nLeague}, '{clsLeague.m_strEn}', '{clsLeague.m_strKo}', {model.m_nHomeTeam}, '{clsHomeTeam.m_strEn}', '{clsHomeTeam.m_strKo}', {model.m_nAwayTeam}, '{clsAwayTeam.m_strEn}', '{clsAwayTeam.m_strKo}', '{model.m_strDate}', '{model.m_strHour}', '{model.m_strMin}', {model.m_nStatus}, {nKubun}, '{CMyTime.GetMyTimeStr()}', {model.m_nSpecial}, '{clsLeague.m_strImg}', {model.m_nHomeScore}, {model.m_nAwayScore}, '{model.m_strWinTeam}', {model.m_nPeriod}, {model.m_nSpecified}, {model.m_nType})";
+                sql = $"INSERT INTO tb_child(game_sn, sport_id, sport_name_en, sport_name, league_sn, notice_en, notice, home_team_id, home_team_en, home_team, away_team_id, away_team_en, away_team, gameDate, gameHour, gameTime, status, kubun, strTime, special, league_img, home_score, away_score, win_team, game_period, is_specified_special, tb_child.type) VALUES({model.m_nFixtureID}, {model.m_nSports}, '{clsSports.m_strEn}', '{clsSports.m_strKo}', {clsLeague.m_nCode}, '{clsLeague.m_strEn}', '{clsLeague.m_strKo}', {model.m_nHomeTeam}, '{clsHomeTeam.m_strEn}', '{clsHomeTeam.m_strKo}', {model.m_nAwayTeam}, '{clsAwayTeam.m_strEn}', '{clsAwayTeam.m_strKo}', '{model.m_strDate}', '{model.m_strHour}', '{model.m_strMin}', {model.m_nStatus}, {nKubun}, '{CMyTime.GetMyTimeStr()}', {model.m_nSpecial}, '{clsLeague.m_strImg}', {model.m_nHomeScore}, {model.m_nAwayScore}, '{model.m_strWinTeam}', {model.m_nPeriod}, {model.m_nSpecified}, {model.m_nType})";
 
                 nChildSn = CMySql.ExcuteQuery(sql);
 
@@ -145,19 +162,19 @@ namespace LSportsServer
         public static void SaveScoreInfoToDB(MScore model)
         {
             string sql = $"INSERT INTO tb_score(game_sn, period, home_score, away_score, isFinished, isConfirmed, strTime) VALUES({model.m_nFixtureID}, {model.m_nPeriod}, {model.m_nHomeScore}, {model.m_nAwayScore}, {model.m_nIsFinished}, {model.m_nIsConfirmed}, '{CMyTime.GetMyTimeStr()}')";
-            CMySql.ExcuteQuery(sql);
+            CMySql.PushCommonQuery(sql);
         }
 
         public static void SetGameSchedule(string strWhere)
         {
             string sql = $"UPDATE tb_child SET live = 1 WHERE live != -1 AND {strWhere}";
-            CMySql.ExcuteQuery(sql);
+            CMySql.PushCommonQuery(sql);
         }
 
         public static void SaveScoreToDB(MGame model)
         {
-            string sql = $"UPDATE tb_child SET home_score = {model.m_nHomeScore}, away_score = {model.m_nAwayScore}, game_period = {model.m_nPeriod} WHERE sn = {model.m_nCode}";
-            CMySql.ExcuteQuery(sql);
+            string sql = $"UPDATE tb_child SET home_score = {model.m_nHomeScore}, away_score = {model.m_nAwayScore}, game_period = {model.m_nPeriod} WHERE game_sn = {model.m_nFixtureID}";
+            CMySql.PushCommonQuery(sql);
         }
 
         public static void SaveLeagueToDB(long nLeagueId, string strName, long nLocationId, long nSportId)
