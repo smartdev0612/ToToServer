@@ -163,6 +163,13 @@ namespace LSportsServer
                 return;
             }
 
+            int single_betting = CGlobal.ParseInt(userInfo["single_betting"]);
+            if(single_betting == 0 && betting_cnt == 1)
+            {
+                ReturnPacket(CDefine.PACKET_SPORT_BET, "회원님은 단폴배팅 불가능합니다.", 1);
+                return;
+            }
+
             //-> 게임번호
             sql = "SELECT MAX(sn) AS last_sn FROM tb_total_cart";
             DataRow maxCart = CMySql.GetDataQuery(sql)[0];
@@ -1192,7 +1199,6 @@ namespace LSportsServer
             }
 
             int nGroup = 1;
-
             for (int i = nIndex; i < nIndex + m_reqParam.m_nPageSize; i++)
             {
                 if (i >= lstGame.Count)
@@ -1318,12 +1324,14 @@ namespace LSportsServer
                         sendPacket.m_nGroup = nGroup;
                     }
                 }
-
+                
                 lstSendPacket.Add(sendPacket);
+
             }
 
             CGlobal.ShowConsole("* Sent Game List Packet!");
-            ReturnPacket(nPacketCode, JsonConvert.SerializeObject(lstSendPacket), 0);
+            ReturnPacket(nPacketCode, JsonConvert.SerializeObject(lstSendPacket), 0, m_reqParam.m_nSendType);
+
         }
         
         private void CalcGameCount(List<CGame> lstGame, CLSportsPacket packet)

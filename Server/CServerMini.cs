@@ -500,7 +500,7 @@ namespace LSportsServer
                 }
                 else if (gameType == "odd3line_right" || gameType == "even4line_right")
                 {
-                    info.homeTeam = "회차 [홀4줄좌]";
+                    info.homeTeam = "회차 [홀3줄우]";
                     info.awayTeam = "회차 [짝4줄우]";
                     info.homeRate = Convert.ToDouble(miniodds_info["ps_oeline_lr"]);
                     info.awayRate = info.homeRate;

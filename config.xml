@@ -21,5 +21,6 @@
 	  <use_powerball>yes</use_powerball>
 	  <use_powerladder>yes</use_powerladder>
 	  <server_http>3001</server_http>
-	  <server_port>3002</server_port>
+	  <server_addr>211.115.107.17</server_addr>
+	  <server_port>8443</server_port>
 </config>

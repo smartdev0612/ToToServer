@@ -52,7 +52,7 @@ namespace LSportsServer
             new Thread(CMySql.ExcuteCommonQuery).Start();
             
             CLSports.Connect();
-            // CPowerball.StartPowerball();
+            CPowerball.StartPowerball();
             CEngine.StartRealProcess();
             CServer.Start();
         }

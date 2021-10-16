@@ -480,7 +480,7 @@ namespace LSportsServer
 
             string strNowTime = nowTime.AddHours(-3).ToString("yyyy-MM-dd HH:mm");
 
-            string sql = $"SELECT tb_child.sn, tb_child.game_sn FROM tb_child LEFT JOIN tb_subchild ON tb_child.sn = tb_subchild.child_sn WHERE tb_child.sport_id > 0 AND CONCAT(tb_child.gameDate, ' ', tb_child.gameHour, ':', tb_child.gameTime) <= '{strNowTime} 00:00' AND tb_subchild.sn IS NULL UNION SELECT sn, game_sn FROM tb_child WHERE STATUS > 2 AND gameDate< '{strPreDate}'";
+            string sql = $"SELECT tb_child.sn, tb_child.game_sn FROM tb_child LEFT JOIN tb_subchild ON tb_child.sn = tb_subchild.child_sn WHERE tb_child.sport_id > 0 AND CONCAT(tb_child.gameDate, ' ', tb_child.gameHour, ':', tb_child.gameTime) <= '{strNowTime} 00:00' AND tb_subchild.sn IS NULL UNION SELECT sn, game_sn FROM tb_child WHERE STATUS > 2 AND gameDate < '{strPreDate}'";
 
             DataRowCollection list = CMySql.GetDataQuery(sql);
             Console.WriteLine(list.Count);
@@ -520,6 +520,12 @@ namespace LSportsServer
             lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_powersadari_result WHERE gameDate < '{strPreDate}'";
+            lstSql.Add(sql);
+
+            sql = $"DELETE FROM tb_subchild WHERE child_sn IN (SELECT sn FROM tb_child WHERE gameDate < '{strPreBettingDate}')";
+            lstSql.Add(sql);
+
+            sql = $"DELETE FROM tb_child WHERE gameDate < '{strPreBettingDate}'";
             lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_total_betting WHERE tb_total_betting.betting_no IN (SELECT tb_total_cart.betting_no FROM tb_total_cart WHERE tb_total_cart.bet_date < '{strPreBettingDate} 00:00:00')";

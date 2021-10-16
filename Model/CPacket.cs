@@ -10,6 +10,7 @@ namespace LSportsServer
         public int m_nPacketCode;
         public int m_nRetCode;
         public string m_strPacket;
+        public int m_nEnd;              // 0: 파켓전송중, 1: 파켓마감
 
         public CPacket()
         {
@@ -112,5 +113,6 @@ namespace LSportsServer
         public int m_nPageIndex;
         public int m_nPageSize;
         public int m_nLive;
+        public int m_nSendType;
     }
 }

@@ -10,6 +10,7 @@ namespace LSportsServer
     public static class CDefine
     {
         public static string SERVER_HTTP;
+        public static string SERVER_ADDR;
         public static string SERVER_PORT;
 
         public static string DB_ADDR;
@@ -101,6 +102,7 @@ namespace LSportsServer
                 CDefine.USE_POWERLADDER = node.SelectSingleNode("use_powerladder").InnerText;
 
                 CDefine.SERVER_HTTP = node.SelectSingleNode("server_http").InnerText;
+                CDefine.SERVER_ADDR = node.SelectSingleNode("server_addr").InnerText;
                 CDefine.SERVER_PORT = node.SelectSingleNode("server_port").InnerText;
             }
         }
