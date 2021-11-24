@@ -156,27 +156,32 @@ namespace LSportsServer
     {
         public static void Start()
         {
-            WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_PORT), true);
-            wssv.SslConfiguration.ServerCertificate = new X509Certificate2("ssl.pfx", "1111", X509KeyStorageFlags.MachineKeySet);
-            wssv.AddWebSocketService<CGameServer>("/");
-            wssv.Start();
-            CGlobal.ShowConsole("Socket Server Start!");
+            if (CDefine.USE_WSS == "yes")
+            {
+                WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_PORT), true);
+                wssv.SslConfiguration.ServerCertificate = new X509Certificate2("ssl.pfx", "1111", X509KeyStorageFlags.MachineKeySet);
+                wssv.AddWebSocketService<CGameServer>("/");
+                wssv.Start();
+                CGlobal.ShowConsole("Socket Server Start!");
 
-            WebSocket ws = new WebSocket($"wss://{CDefine.SERVER_ADDR}:{CDefine.SERVER_PORT}");
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnError += Ws_OnError;
-            ws.OnClose += Ws_OnClose;
-            ws.Connect(); 
+                WebSocket ws = new WebSocket($"wss://{CDefine.SERVER_ADDR}:{CDefine.SERVER_PORT}");
+                ws.OnOpen += Ws_OnOpen;
+                ws.OnError += Ws_OnError;
+                ws.OnClose += Ws_OnClose;
+                ws.Connect();
+            }
+            else
+            {
+                WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_PORT));
+                wssv.AddWebSocketService<CGameServer>("/");
+                wssv.Start();
 
-            /*WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_PORT));
-            wssv.AddWebSocketService<CGameServer>("/");
-            wssv.Start();
-
-            WebSocket ws = new WebSocket($"ws://127.0.0.1:{CDefine.SERVER_PORT}");
-            ws.OnOpen += Ws_OnOpen;
-            ws.OnError += Ws_OnError;
-            ws.OnClose += Ws_OnClose;
-            ws.Connect(); */
+                WebSocket ws = new WebSocket($"ws://127.0.0.1:{CDefine.SERVER_PORT}");
+                ws.OnOpen += Ws_OnOpen;
+                ws.OnError += Ws_OnError;
+                ws.OnClose += Ws_OnClose;
+                ws.Connect();
+            }
         }
 
         private static void Ws_OnClose(object sender, CloseEventArgs e)

@@ -58,7 +58,7 @@ namespace LSportsServer
 
         public static DataRowCollection SelectGame()
         {
-            string sql = "SELECT * FROM tb_child WHERE status < 3 AND sport_id > 0 AND sport_id IS NOT NULL AND special != 3 ORDER BY gameDate, gameHour, gameTime";
+            string sql = "SELECT * FROM tb_child WHERE status < 3 AND sport_id > 0 AND sport_id IS NOT NULL AND special != 3 ORDER BY live DESC";
             DataRowCollection list = CMySql.GetDataQuery(sql);
 
             return list;

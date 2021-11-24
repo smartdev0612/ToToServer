@@ -47,14 +47,20 @@ namespace LSportsServer
             _lstlnGetApiFixtureID = new List<long>();
             _lstlnGetLiveFixtureID = new List<long>();
 
-            LoadInfoFromDB();
-
             new Thread(CMySql.ExcuteCommonQuery).Start();
-            
-            CLSports.Connect();
-            CPowerball.StartPowerball();
-            CEngine.StartRealProcess();
+
             CServer.Start();
+
+            if (CDefine.USE_SPORTS_SERVER == "yes")
+            {
+                CLSports.Connect();
+                CEngine.StartRealProcess();
+                LoadInfoFromDB();
+            }
+            else
+            {
+                CPowerball.StartPowerball();
+            }
         }
 
         private static void LoadInfoFromDB()

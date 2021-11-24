@@ -18,9 +18,11 @@
 	  <power_server>42.127.251.14:3030</power_server>
 	  <use_prematch>yes</use_prematch>
 	  <use_live>yes</use_live>
-	  <use_powerball>yes</use_powerball>
-	  <use_powerladder>yes</use_powerladder>
+	  <use_powerball>no</use_powerball>
+	  <use_powerladder>no</use_powerladder>
 	  <server_http>3001</server_http>
 	  <server_addr>211.115.107.17</server_addr>
 	  <server_port>8443</server_port>
+	  <use_wss>yes</use_wss>
+	  <use_sports_server>yes</use_sports_server>
 </config>

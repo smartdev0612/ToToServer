@@ -30,6 +30,9 @@ namespace LSportsServer
         public static string USE_POWERBALL;
         public static string USE_POWERLADDER;
 
+        public static string USE_WSS;
+        public static string USE_SPORTS_SERVER;
+
         public static string POWER_SERVER;
 
         public static string API_URL;
@@ -104,6 +107,9 @@ namespace LSportsServer
                 CDefine.SERVER_HTTP = node.SelectSingleNode("server_http").InnerText;
                 CDefine.SERVER_ADDR = node.SelectSingleNode("server_addr").InnerText;
                 CDefine.SERVER_PORT = node.SelectSingleNode("server_port").InnerText;
+
+                CDefine.USE_WSS = node.SelectSingleNode("use_wss").InnerText;
+                CDefine.USE_SPORTS_SERVER = node.SelectSingleNode("use_sports_server").InnerText;
             }
         }
     }

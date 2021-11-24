@@ -262,7 +262,13 @@ namespace LSportsServer
             int lastCartIdx = 0;
             if (lstTemp.Count > 0)
                 lastCartIdx = lstTemp[0]["last_sn"] == DBNull.Value ? 0 : CGlobal.ParseInt(lstTemp[0]["last_sn"]);
-            double protoId = (CMyTime.ConvertToUnixTimestamp(CMyTime.GetMyTime()) - CMyTime.ConvertToUnixTimestamp(CMyTime.ConvertStrToTime("2000-01-01 00:00:00"))) + lastCartIdx;
+            string protoId = (CMyTime.ConvertToUnixTimestamp(CMyTime.GetMyTime()) - CMyTime.ConvertToUnixTimestamp(CMyTime.ConvertStrToTime("2000-01-01 00:00:00")) + (9 * 60 * 60) + lastCartIdx).ToString();
+            if (protoId == "")
+            {
+                ReturnPacket(CDefine.PACKET_SPORT_BET, "구매번호를 확인하여 주세요.", 1);
+                return;
+            }
+            protoId = $"{nUser}{protoId}";
 
             //-> 배팅정보 Insert
             int selectTeam = info.GetSelectTeam(gameType);
