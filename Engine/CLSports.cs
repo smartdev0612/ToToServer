@@ -12,163 +12,248 @@ namespace LSportsServer
 {
     public static class CLSports
     {
-        private static WebSocket m_wsPrematch;
-        private static WebSocket m_wsLive;
+        private static WebSocket m_wsPrematchLive;
+        private static WebSocket m_wsPrematchData;
+        private static WebSocket m_wsInplayLive;
+        private static WebSocket m_wsInplayData;
+        private static WebSocket m_wsSchedule;
         
 
         public static void Connect()
         {
-            // API로부터 리그정보로드 
-            // CLeague clsLeague = new CLeague();
-            // clsLeague.SaveLeagueInfo(687890);
-
             /*use*/
             if (CDefine.USE_PREMATCH == "yes")
             {
-                m_wsPrematch = new WebSocket($"ws://{CDefine.ADDR_SEVER}:{CDefine.SOCKET_PREMATCH}");
-                m_wsPrematch.OnOpen += Prematch_OnOpen;
-                m_wsPrematch.OnError += Prematch_OnError;
-                m_wsPrematch.OnClose += Prematch_OnClose;
-                m_wsPrematch.OnMessage += Prematch_OnMessage;
+                m_wsPrematchLive = new WebSocket($"ws://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_PREMATCH_LIVE}");
+                m_wsPrematchLive.OnOpen += Socket_OnOpen;
+                m_wsPrematchLive.OnError += Socket_OnError;
+                m_wsPrematchLive.OnClose += Socket_OnClose;
+                m_wsPrematchLive.OnMessage += OnRecvPrematchLive;
 
-                m_wsPrematch.Connect();
+                m_wsPrematchLive.Connect();
                 //new Thread(() => StartThread(CDefine.LSPORTS_PREMATCH)).Start();
+
+                m_wsPrematchData = new WebSocket($"ws://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_PREMATCH_DATA}");
+                m_wsPrematchData.OnOpen += Socket_OnOpen;
+                m_wsPrematchData.OnError += Socket_OnError;
+                m_wsPrematchData.OnClose += Socket_OnClose;
+                m_wsPrematchData.OnMessage += OnRecvPrematchData;
+
+                m_wsPrematchData.Connect();
             }
 
             if (CDefine.USE_LIVE == "yes")
             {
-                m_wsLive = new WebSocket($"ws://{CDefine.ADDR_SEVER}:{CDefine.SOCKET_LIVE}");
-                m_wsLive.OnOpen += Live_OnOpen;
-                m_wsLive.OnError += Prematch_OnError;
-                m_wsLive.OnClose += Prematch_OnClose;
-                m_wsLive.OnMessage += Live_OnMessage;
+                m_wsInplayLive = new WebSocket($"ws://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_INPLAY_LIVE}");
+                m_wsInplayLive.OnOpen += Socket_OnOpen;
+                m_wsInplayLive.OnError += Socket_OnError;
+                m_wsInplayLive.OnClose += Socket_OnClose;
+                m_wsInplayLive.OnMessage += OnRecvInplayLive;
 
-                m_wsLive.Connect();
+                m_wsInplayLive.Connect();
                 //new Thread(() => StartThread(CDefine.LSPORTS_LIVE)).Start();
+
+                m_wsInplayData = new WebSocket($"ws://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_INPLAY_DATA}");
+                m_wsInplayData.OnOpen += Socket_OnOpen;
+                m_wsInplayData.OnError += Socket_OnError;
+                m_wsInplayData.OnClose += Socket_OnClose;
+                m_wsInplayData.OnMessage += OnRecvInplayData;
+
+                m_wsInplayData.Connect();
             }
 
+            m_wsSchedule = new WebSocket($"ws://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_SCHEDULE}");
+            m_wsSchedule.OnOpen += Socket_OnOpen;
+            m_wsSchedule.OnError += Socket_OnError;
+            m_wsSchedule.OnClose += Socket_OnClose;
+            m_wsSchedule.OnMessage += OnRecvSchedule;
+
+            m_wsSchedule.Connect();
+
+
             new Thread(() => StartCheckFinished()).Start();
-            new Thread(() => StartCheckSchedule()).Start();
         }
 
-        private static void Prematch_OnClose(object sender, CloseEventArgs e)
+        private static void Socket_OnClose(object sender, CloseEventArgs e)
         {
             (sender as WebSocket).Connect();
         }
 
-        private static void Prematch_OnError(object sender, ErrorEventArgs e)
+        private static void Socket_OnError(object sender, ErrorEventArgs e)
         {
             (sender as WebSocket).Close();
         }
 
-        private static void Prematch_OnOpen(object sender, EventArgs e)
+        private static void Socket_OnOpen(object sender, EventArgs e)
         {
-            CGlobal.ShowConsole("Prematch socket connected!");
+            CGlobal.ShowConsole("socket connected!");
         }
 
-        private static void Live_OnOpen(object sender, EventArgs e)
-        {
-            CGlobal.ShowConsole("Live socket connected!");
-        }
-
-        //private static void Data_OnOpen(object sender, EventArgs e)
-        //{
-        //    CGlobal.ShowConsole("Data socket connected!");
-        //}
-
-        private static void Prematch_OnMessage(object sender, MessageEventArgs e)
+        private static void OnRecvPrematchLive(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data.ToString();
-            //CGlobal.AddLSportsPacket(CDefine.LSPORTS_PREMATCH, strPacket);
             StartParsingData(strPacket, CDefine.LSPORTS_PREMATCH);
         }
 
-        private static void Live_OnMessage(object sender, MessageEventArgs e)
+        private static void OnRecvPrematchData(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data.ToString();
-            //CGlobal.AddLSportsPacket(CDefine.LSPORTS_LIVE, strPacket);
-            StartParsingData(strPacket, CDefine.LSPORTS_LIVE);
-        }
-
-        //private static void Data_OnMessage(object sender, MessageEventArgs e)
-        //{
-        //    string strPacket = e.Data.ToString();
-        //    CGlobal.AddLSportsPacket(CDefine.LSPORTS_DATA, strPacket);
-        //}
-
-        private static void StartThread(int nFlag)
-        {
-            while (true)
-            {
-                string strPacket = CGlobal.GetLSportsPacket(nFlag);
-                if (strPacket == string.Empty || strPacket == null)
-                {
-                    Thread.Sleep(50);
-                    continue;
-                }
-
-                if(nFlag == CDefine.LSPORTS_DATA)
-                {
-                    StartParsingData(strPacket);
-                }
-                else
-                {
-                    StartParsingData(strPacket, nFlag);
-                }
-            }
-        }
-
-        private static void StartParsingData(string strPacket)
-        {
             try
             {
-                CDataPacket clsPacket = JsonConvert.DeserializeObject<CDataPacket>(strPacket);
-
-                JObject objMarkets = JObject.Parse(clsPacket.Markets);
+                JObject objMarkets = JObject.Parse(strPacket);
                 List<JToken> lstBody = objMarkets["Body"].ToList();
                 if (lstBody.Count == 0)
+                {
                     return;
+                }
 
                 foreach (JToken objBody in lstBody)
                 {
-                    List<JToken> lstMarket = objBody["Markets"].ToList();
-                    if (lstMarket.Count == 0)
-                        return;
+                    if (objBody["Fixture"] == null || !objBody["Fixture"].HasValues)
+                    {
+                        continue;
+                    }
 
-                    JToken objFixture = JObject.Parse(clsPacket.Fixture);
+                    JToken objFixture = objBody;
                     long nFixtureID = Convert.ToInt64(objFixture["FixtureId"]);
+                    CGlobal.ShowConsole($"ReceiveMarket {nFixtureID} game! *************************");
                     CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
-
                     if (clsGame == null)
                     {
                         clsGame = new CGame(nFixtureID);
-                        clsGame.UpdateInfo(objFixture);
-
-                        if (clsGame.m_nCode > 0 && clsGame.m_nStatus < 3)
-                        {
-                            string strTime = $"{clsGame.m_strDate} {clsGame.m_strHour}:{clsGame.m_strMin}:00";
-                            DateTime dtTime = CMyTime.ConvertStrToTime(strTime);
-                            DateTime dtLimit = CMyTime.GetMyTime().AddDays(3);
-                            if (dtTime < dtLimit)
-                            {
-                                clsGame.UpdateMarket(lstMarket, 0);
-                                clsGame.UpdateScore(objFixture);
-                                //if (clsGame.GetBetRateCount() > 0)
-                                CGlobal.AddGameInfo(clsGame);
-                            }
-                        }
+                        CGlobal.AddGameInfo(clsGame);
                     }
-                    else
+                    if (objBody["Markets"] == null || !objBody["Markets"].HasValues)
                     {
-                        clsGame.UpdateInfo(objFixture);
-                        clsGame.UpdateMarket(lstMarket, 0);
-                        clsGame.UpdateScore(objFixture);
+                        continue;
                     }
+
+                    List<JToken> lstMarket = objBody["Markets"].ToList();
+
+                    if (lstMarket.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    JToken objScore = objBody;
+
+                    clsGame.UpdateInfo(objFixture);
+                    clsGame.UpdateMarket(lstMarket, 0);
+                    clsGame.UpdateScore(objScore);
+
+                    clsGame.SetCheckMarket();
                 }
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        private static void OnRecvInplayLive(object sender, MessageEventArgs e)
+        {
+            string strPacket = e.Data.ToString();
+            StartParsingData(strPacket, CDefine.LSPORTS_INPLAY);
+        }
+
+        private static void OnRecvInplayData(object sender, MessageEventArgs e)
+        {
+            string strPacket = e.Data.ToString();
+            try
+            {
+                JObject objMarkets = JObject.Parse(strPacket);
+
+                if (objMarkets["Body"] == null || !objMarkets["Body"].HasValues)
+                {
+                    return;
+                }
+                JToken objBody = objMarkets["Body"];
+                if (objBody["Events"] == null || !objBody["Events"].HasValues)
+                {
+                    return;
+                }
+
+                List<JToken> lstEvents = objBody["Events"].ToList();
+
+
+                foreach (JToken objEvent in lstEvents)
+                {
+                    if (objEvent["Fixture"] == null || !objEvent["Fixture"].HasValues)
+                    {
+                        continue;
+                    }
+
+                    JToken objFixture = objEvent;
+                    long nFixtureID = Convert.ToInt64(objFixture["FixtureId"]);
+
+                    if (objEvent["Markets"] == null || !objEvent["Markets"].HasValues)
+                    {
+                        continue;
+                    }
+
+                    List<JToken> lstMarket = objEvent["Markets"].ToList();
+
+                    if (lstMarket.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    JToken objScore = objEvent;
+
+                    CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
+                    if (clsGame == null)
+                    {
+                        clsGame = new CGame(nFixtureID);
+                        CGlobal.AddGameInfo(clsGame);
+                    }
+
+                    clsGame.UpdateInfo(objFixture);
+                    clsGame.UpdateMarket(lstMarket, 3);
+                    clsGame.UpdateScore(objScore);
+
+                    clsGame.SetCheckMarket();
+                }
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        private static void OnRecvSchedule(object sender, MessageEventArgs e)
+        {
+            string strPacket = e.Data.ToString();
+
+            try
+            {
+                JToken objPacket = JObject.Parse(strPacket);
+                if (objPacket["Body"] == null)
+                    return;
+
+                JToken objBody = objPacket["Body"];
+                if (objBody["InPlayEvents"] == null || !objBody["InPlayEvents"].HasValues)
+                    return;
+
+                List<JToken> list = objBody["InPlayEvents"].ToList();
+
+                string strWhere = "sn = 0";
+                foreach (JToken obj in list)
+                {
+                    long nFixtureID = Convert.ToInt64(obj["FixtureId"]);
+                    CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
+                    if (clsGame == null)
+                        continue;
+
+                    strWhere += clsGame.UpdateSchedule();
+                }
+
+                if (strWhere != "sn = 0")
+                    CEntry.SetGameSchedule(strWhere);
+                Thread.Sleep(5000);
             }
             catch (Exception err)
             {
-                Console.WriteLine(err.Message);
+                CGlobal.ShowConsole(err.Message);
             }
         }
 
@@ -188,13 +273,14 @@ namespace LSportsServer
                 {
                     case 1:
                         // CGlobal.ShowConsole("GameFixture");
-                        // CGlobal.WriteLogAsync(strPacket);
+                        // CGlobal.WriteFixtureLogAsync(strPacket);
                         GameFixture(objBody, nFlag);
                         string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
-                        CGlobal.ShowConsole(strBettingListLog);
+                        // CGlobal.ShowConsole(strBettingListLog);
                         break;
                     case 2:
                         // CGlobal.ShowConsole("GameScore");
+                        // CGlobal.WriteScoreLogAsync(strPacket);
                         GameScore(objBody, nFlag);
                         break;
                     case 3:
@@ -203,6 +289,7 @@ namespace LSportsServer
                         break;
                     case 35:
                         // CGlobal.ShowConsole("GameResult");
+                        // CGlobal.WriteResultLogAsync(strPacket);
                         GameResult(objBody, nFlag);
                         break;
                 }
@@ -289,8 +376,8 @@ namespace LSportsServer
                     strLog += nFixtureID + "\n";
                     strLog += JsonConvert.SerializeObject(lstMarket) + "\n";
                     strLog += "---------------------------------------------------------------------------";
-
-                    // CGlobal.WriteLogAsync(strLog);
+                    //if(nFixtureID == 7888538)
+                        //CGlobal.WriteMarketLogAsync(strLog);
                 }
             }
         }
@@ -389,7 +476,7 @@ namespace LSportsServer
                 }
 
                 List<CGame> lstGame = CGlobal.GetGameList();
-                lstGame = lstGame.FindAll(value => value != null && value.m_nStatus >= 2);
+                lstGame = lstGame.FindAll(value => value != null && value.m_nStatus >= 2).ToList();
                 foreach(CGame clsGame in lstGame)
                 {
                     if(clsGame.m_nSpecial != 3)
@@ -398,76 +485,22 @@ namespace LSportsServer
                     }
                 }
 
-
-                Thread.Sleep(10 * 1000);
-            }
-        }
-
-        private static void StartCheckSchedule()
-        {
-            List<CSports> lstSports = CGlobal.GetSportsList().FindAll(value => value.m_nUse == 1);
-
-            while(true)
-            {
-                foreach(CSports info in lstSports)
-                {
-                    try
-                    {
-                        string strUrl = $"http://175.125.95.163:3034/LSports/playSchedule?{info.m_nCode}";
-                        string str = CHttp.GetResponseString(strUrl);
-
-                        JToken objPacket = JObject.Parse(str);
-                        if (objPacket["Body"] == null)
-                            continue;
-
-                        JToken objBody = objPacket["Body"];
-                        if (objBody["InPlayEvents"] == null || !objBody["InPlayEvents"].HasValues)
-                            continue;
-
-                        List<JToken> list = objBody["InPlayEvents"].ToList();
-
-                        string strWhere = "sn = 0";
-                        foreach (JToken obj in list)
-                        {
-                            long nFixtureID = Convert.ToInt64(obj["FixtureId"]);
-                            CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
-                            if (clsGame == null)
-                                continue;
-
-                            strWhere += clsGame.UpdateSchedule();
-                        }
-
-                        if (strWhere != "sn = 0")
-                            CEntry.SetGameSchedule(strWhere);
-                        Thread.Sleep(5000);
-                    }
-                    catch(Exception err)
-                    {
-                        CGlobal.ShowConsole(err.Message);
-                    }
-                   
-                }
-
                 try
                 {
-                    List<CGame> lstGame = CGlobal.GetGameList();
-                    if(lstGame != null)
+                    lock (lstGame)
                     {
-                        lock(lstGame)
-                        {
-                            lstGame.RemoveAll(value => value != null && value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
-                        }
+                        lstGame.RemoveAll(value => value != null && value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
                     }
                 }
                 catch (Exception err)
                 {
                     CGlobal.ShowConsole(err.Message);
                 }
-               
-                Thread.Sleep(1000 * 60);
+
+
+                Thread.Sleep(10 * 1000);
             }
         }
-
 
         private static void GetGameInfoFromApi(long nFixtureId)
         {
@@ -484,117 +517,14 @@ namespace LSportsServer
                 GetInPlayInfoFromApi(clsGame.m_nFixtureID);
             }
 
-            string strReq = $"http://{CDefine.ADDR_SEVER}:{CDefine.HTTP_PORT}/LSports/getGameEvent?{nFixtureId}";
+            string strReq = $"http://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_HTTP_PORT}/api/prematch/{nFixtureId}";
             string strPacket = CHttp.GetResponseString(strReq);
-            try
-            {
-                JObject objMarkets = JObject.Parse(strPacket);
-                List<JToken> lstBody = objMarkets["Body"].ToList();
-                if (lstBody.Count == 0)
-                {
-                    return;
-                }
-
-                foreach(JToken objBody in lstBody)
-                {
-                    if (objBody["Fixture"] == null || !objBody["Fixture"].HasValues)
-                    {
-                        continue;
-                    }
-
-                    JToken objFixture = objBody;
-
-                    if (objBody["Markets"] == null || !objBody["Markets"].HasValues)
-                    {
-                        continue;
-                    }
-
-                    List<JToken> lstMarket = objBody["Markets"].ToList();
-
-                    if (lstMarket.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    JToken objScore = objBody;
-
-                    clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, 0);
-                    clsGame.UpdateScore(objScore);
-
-                    clsGame.SetCheckMarket();
-                }
-            }
-            catch
-            {
-                return;
-            }
-
         }
 
         private static void GetInPlayInfoFromApi(long nFixtureId)
         {
-            string strReq = $"http://{CDefine.ADDR_SEVER}:{CDefine.HTTP_PORT}/LSports/inplay?{nFixtureId}";
+            string strReq = $"http://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_HTTP_PORT}/api/inplay/{nFixtureId}";
             string strPacket = CHttp.GetResponseString(strReq);
-            try
-            {
-                JObject objMarkets = JObject.Parse(strPacket);
-
-                if (objMarkets["Body"] == null || !objMarkets["Body"].HasValues)
-                {
-                    return;
-                }
-                JToken objBody = objMarkets["Body"];
-                if(objBody["Events"] == null || !objBody["Events"].HasValues)
-                {
-                    return;
-                }
-
-                List<JToken> lstEvents = objBody["Events"].ToList();
-
-
-                foreach (JToken objEvent in lstEvents)
-                {
-                    if (objEvent["Fixture"] == null || !objEvent["Fixture"].HasValues)
-                    {
-                        continue;
-                    }
-
-                    JToken objFixture = objEvent;
-
-                    if (objEvent["Markets"] == null || !objEvent["Markets"].HasValues)
-                    {
-                        continue;
-                    }
-
-                    List<JToken> lstMarket = objEvent["Markets"].ToList();
-
-                    if (lstMarket.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    JToken objScore = objEvent;
-
-                    CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureId);
-                    if (clsGame == null)
-                    {
-                        clsGame = new CGame(nFixtureId);
-                        CGlobal.AddGameInfo(clsGame);
-                    }
-
-                    clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, 3);
-                    clsGame.UpdateScore(objScore);
-
-                    clsGame.SetCheckMarket();
-                }
-            }
-            catch
-            {
-                return;
-            }
-
         }
 
         public static void LoadGameInfoToDB()
@@ -649,7 +579,7 @@ namespace LSportsServer
                     if (clsGame.CheckGame())
                     {
                         GetGameInfoFromApi(clsGame.m_nFixtureID);
-                        CGlobal.ShowConsole($"Loading {clsGame.m_nFixtureID} game! *************************");
+                        //CGlobal.ShowConsole($"Loading {clsGame.m_nFixtureID} game! *************************");
                         Thread.Sleep(300);
                     }
                     else
@@ -664,7 +594,7 @@ namespace LSportsServer
                 try
                 {
                     List<CGame> lstGame = CGlobal.GetGameList();
-                    lstGame = lstGame.FindAll(value => value != null && value.CheckMarket() == false);
+                    lstGame = lstGame.FindAll(value => value != null && value.CheckMarket() == false).ToList();
 
                     foreach (CGame clsInfo in lstGame)
                     {

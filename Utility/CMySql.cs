@@ -28,7 +28,7 @@ namespace LSportsServer
         {
             int nSn = 0;
 
-            // CGlobal.ShowConsole(sql);
+            CGlobal.ShowConsole(sql);
             using (MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString()))
             {
                 mysqlCon.Open();
@@ -117,7 +117,7 @@ namespace LSportsServer
 
         public static DataRowCollection GetDataQuery(string sql)
         {
-            // CGlobal.ShowConsole(sql);
+            CGlobal.ShowConsole(sql);
             try
             {
                 using (MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString()))

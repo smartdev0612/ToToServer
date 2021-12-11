@@ -1,14 +1,146 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
+using WebSocketSharp;
+using WebSocketSharp.Server;
 
 namespace LSportsServer
 {
-    public partial class CGameServer
+    public class CMiniGameServer : WebSocketBehavior
     {
+        protected override void OnOpen()
+        {
+            base.OnOpen();
+            CGlobal.ShowConsole("MiniGame Browser connect!");
+        }
+
+        protected override void OnClose(CloseEventArgs e)
+        {
+            CGlobal.ShowConsole("MiniGame Browser Close!");
+            CGlobal.ShowConsole(e.Reason);
+            base.OnClose(e);
+        }
+
+        protected override void OnError(ErrorEventArgs e)
+        {
+            CGlobal.ShowConsole("Browser Error!");
+            CGlobal.ShowConsole(e.Message);
+            base.OnError(e);
+        }
+
+        protected override void OnMessage(MessageEventArgs e)
+        {
+            string strPacket = string.Empty;
+            if (e.IsBinary)
+            {
+                strPacket = Encoding.UTF8.GetString(e.RawData);
+            }
+            else
+            {
+                strPacket = e.Data.ToString();
+            }
+            //CGlobal.ShowConsole(strPacket);
+            if (strPacket == "Server")
+            {
+                CGlobal.SetBroadcastMiniSocket(this);
+                return;
+            }
+
+            try
+            {
+                CPacket clsPacket = JsonConvert.DeserializeObject<CPacket>(strPacket);
+                OnMiniGamePacket(clsPacket);
+            }
+            catch (Exception err)
+            {
+                CGlobal.ShowConsole(err.Message);
+            }
+        }
+
+        private void OnMiniGamePacket(CPacket packet)
+        {
+            switch (packet.m_nPacketCode)
+            {
+                case CDefine.PACKET_POWERBALL_BET:
+                    try
+                    {
+                        OnPowerballBetting(packet.m_strPacket, packet.m_nPacketCode);
+                    }
+                    catch
+                    {
+                        ReturnPacket(CDefine.PACKET_POWERBALL_BET, "배팅처리가 되지 않았습니다. 다시 시도해주세요.", 1);
+                        return;
+                    }
+
+                    break;
+
+                case CDefine.PACKET_POWERLADDER_BET:
+                    try
+                    {
+                        OnPowerballBetting(packet.m_strPacket, packet.m_nPacketCode);
+                    }
+                    catch
+                    {
+                        ReturnPacket(CDefine.PACKET_POWERBALL_BET, "배팅처리가 되지 않았습니다. 다시 시도해주세요.", 1);
+                        return;
+                    }
+
+                    break;
+
+                case CDefine.PACKET_KENOLADDER_BET:
+                    try
+                    {
+                        OnPowerballBetting(packet.m_strPacket, packet.m_nPacketCode);
+                    }
+                    catch
+                    {
+                        ReturnPacket(CDefine.PACKET_POWERBALL_BET, "배팅처리가 되지 않았습니다. 다시 시도해주세요.", 1);
+                        return;
+                    }
+
+                    break;
+            }
+        }
+
+        private void ReturnPacket(int nPacketCode, string strPacket, int nError)
+        {
+            CPacket clsPacket = new CPacket(nPacketCode);
+            clsPacket.m_nRetCode = nError;
+            clsPacket.m_nEnd = 1;
+            clsPacket.m_strPacket = strPacket;
+            SendPacket(clsPacket);
+        }
+
+        public void BroadCastPacket(string strPacket)
+        {
+            if (this.State == WebSocketState.Open)
+                this.Sessions.Broadcast(strPacket);
+        }
+
+        public void BroadCastPacket(CPacket packet)
+        {
+            string strPacket = JsonConvert.SerializeObject(packet);
+            BroadCastPacket(strPacket);
+        }
+
+        public void SendPacket(string strPacket)
+        {
+            if (this.State == WebSocketState.Open)
+                this.Send(strPacket);
+        }
+
+        public void SendPacket(CPacket packet)
+        {
+            string strPacket = JsonConvert.SerializeObject(packet);
+            SendPacket(strPacket);
+        }
+
         private void OnPowerballBetting(string strPacket, int nRetCode)
         {
             JToken packet = JObject.Parse(strPacket);
@@ -559,6 +691,62 @@ namespace LSportsServer
                 select = 3;
 
             return select;
+        }
+    }
+
+
+
+
+
+    public static class CMiniServer
+    {
+        public static void Start()
+        {
+            if (CDefine.USE_WSS == "yes")
+            {
+                WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_MINI_PORT), true);
+                wssv.SslConfiguration.ServerCertificate = new X509Certificate2("ssl.pfx", "1111", X509KeyStorageFlags.MachineKeySet);
+                wssv.AddWebSocketService<CMiniGameServer>("/");
+                wssv.Start();
+                CGlobal.ShowConsole("Socket Server Start!");
+
+                WebSocket ws = new WebSocket($"wss://{CDefine.SERVER_ADDR}:{CDefine.SERVER_MINI_PORT}");
+                ws.OnOpen += Ws_OnOpen;
+                ws.OnError += Ws_OnError;
+                ws.OnClose += Ws_OnClose;
+                ws.Connect();
+            }
+            else
+            {
+                WebSocketServer wssv = new WebSocketServer(CGlobal.ParseInt(CDefine.SERVER_MINI_PORT));
+                wssv.AddWebSocketService<CMiniGameServer>("/");
+                wssv.Start();
+
+                WebSocket ws = new WebSocket($"ws://127.0.0.1:{CDefine.SERVER_MINI_PORT}");
+                ws.OnOpen += Ws_OnOpen;
+                ws.OnError += Ws_OnError;
+                ws.OnClose += Ws_OnClose;
+                ws.Connect();
+            }
+        }
+
+        private static void Ws_OnClose(object sender, CloseEventArgs e)
+        {
+            CGlobal.ShowConsole("Socket Server Closed!");
+            CGlobal.ShowConsole(e.Reason);
+            (sender as WebSocket).Connect();
+        }
+
+        private static void Ws_OnError(object sender, ErrorEventArgs e)
+        {
+            CGlobal.ShowConsole("Socket Server Error!");
+            CGlobal.ShowConsole(e.Message);
+            (sender as WebSocket).Connect();
+        }
+
+        private static void Ws_OnOpen(object sender, EventArgs e)
+        {
+            (sender as WebSocket).Send("Server");
         }
     }
 }

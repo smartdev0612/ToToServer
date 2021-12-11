@@ -12,6 +12,7 @@ namespace LSportsServer
         public static string SERVER_HTTP;
         public static string SERVER_ADDR;
         public static string SERVER_PORT;
+        public static string SERVER_MINI_PORT;
 
         public static string DB_ADDR;
         public static string DB_NAME;
@@ -19,11 +20,13 @@ namespace LSportsServer
         public static string DB_PASS;
         public static string DB_PORT;
 
-        public static string ADDR_SEVER;
-        public static string SOCKET_PREMATCH;
-        public static string SOCKET_LIVE;
-        public static string SOCKET_DATA;
-        public static string HTTP_PORT;
+        public static string LSPORTS_ADDRESS;
+        public static string LSPORTS_PREMATCH_LIVE;
+        public static string LSPORTS_INPLAY_LIVE;
+        public static string LSPORTS_PREMATCH_DATA;
+        public static string LSPORTS_INPLAY_DATA;
+        public static string LSPORTS_SCHEDULE;
+        public static string LSPORTS_HTTP_PORT;
 
         public static string USE_PREMATCH;
         public static string USE_LIVE;
@@ -31,20 +34,13 @@ namespace LSportsServer
         public static string USE_POWERLADDER;
 
         public static string USE_WSS;
-        public static string USE_SPORTS_SERVER;
 
         public static string POWER_SERVER;
 
-        public static string API_URL;
-        public static string API_USERNAME;
-        public static string API_PASSWORD;
-        public static string API_GUID;
-        public static string API_PREMATCH_PACKAGE_ID;
-        public static string API_INPLAY_PACKAGE_ID;
 
         public const int LSPORTS_DATA = 0x00;
         public const int LSPORTS_PREMATCH = 0x01;
-        public const int LSPORTS_LIVE = 0x02;
+        public const int LSPORTS_INPLAY = 0x02;
 
 
         public const int LSPORTS_SPORTS_SOCCER = 6046;
@@ -86,17 +82,15 @@ namespace LSportsServer
                 CDefine.DB_PORT = node.SelectSingleNode("db_port").InnerText;
                 CDefine.DB_USER = node.SelectSingleNode("db_user").InnerText;
                 CDefine.DB_PASS = node.SelectSingleNode("db_pass").InnerText;
-                CDefine.API_URL = node.SelectSingleNode("api_url").InnerText;
-                CDefine.API_USERNAME = node.SelectSingleNode("api_username").InnerText;
-                CDefine.API_PASSWORD = node.SelectSingleNode("api_password").InnerText;
-                CDefine.API_GUID = node.SelectSingleNode("api_guid").InnerText;
-                CDefine.API_PREMATCH_PACKAGE_ID = node.SelectSingleNode("api_prematch_package_id").InnerText;
-                CDefine.API_INPLAY_PACKAGE_ID = node.SelectSingleNode("api_live_package_id").InnerText;
-                CDefine.SOCKET_PREMATCH = node.SelectSingleNode("socket_prematch").InnerText;
-                CDefine.SOCKET_LIVE = node.SelectSingleNode("socket_live").InnerText;
-                CDefine.SOCKET_DATA = node.SelectSingleNode("socket_data").InnerText;
-                CDefine.ADDR_SEVER = node.SelectSingleNode("addr_server").InnerText;
-                CDefine.HTTP_PORT = node.SelectSingleNode("http_port").InnerText;
+
+                CDefine.LSPORTS_ADDRESS = node.SelectSingleNode("lsports_address").InnerText;
+                CDefine.LSPORTS_PREMATCH_LIVE = node.SelectSingleNode("lsports_prematch_live").InnerText;
+                CDefine.LSPORTS_INPLAY_LIVE = node.SelectSingleNode("lsports_inplay_live").InnerText;
+                CDefine.LSPORTS_PREMATCH_DATA = node.SelectSingleNode("lsports_prematch_data").InnerText;
+                CDefine.LSPORTS_INPLAY_DATA = node.SelectSingleNode("lsports_inplay_data").InnerText;
+                CDefine.LSPORTS_SCHEDULE = node.SelectSingleNode("lsports_schedule").InnerText;
+                CDefine.LSPORTS_HTTP_PORT = node.SelectSingleNode("lsports_http_port").InnerText;
+
                 CDefine.POWER_SERVER = node.SelectSingleNode("power_server").InnerText;
 
                 CDefine.USE_PREMATCH = node.SelectSingleNode("use_prematch").InnerText;
@@ -107,9 +101,9 @@ namespace LSportsServer
                 CDefine.SERVER_HTTP = node.SelectSingleNode("server_http").InnerText;
                 CDefine.SERVER_ADDR = node.SelectSingleNode("server_addr").InnerText;
                 CDefine.SERVER_PORT = node.SelectSingleNode("server_port").InnerText;
+                CDefine.SERVER_MINI_PORT = node.SelectSingleNode("server_mini_port").InnerText;
 
                 CDefine.USE_WSS = node.SelectSingleNode("use_wss").InnerText;
-                CDefine.USE_SPORTS_SERVER = node.SelectSingleNode("use_sports_server").InnerText;
             }
         }
     }

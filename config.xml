@@ -4,25 +4,23 @@
 	  <db_name>mubayo2_lsports</db_name>
 	  <db_user>traxex</db_user>
 	  <db_pass>pwdTraxex0701</db_pass>
-	  <api_url>https://prematch.lsports.eu</api_url>
-	  <api_username>dhfhwl@hotmail.com</api_username>
-	  <api_password>rv3457n4</api_password>
-	  <api_guid>e17e792f-9a6f-43d5-9390-023f832cc51c</api_guid>
-	  <api_prematch_package_id>3638</api_prematch_package_id>
-	  <api_live_package_id>3656</api_live_package_id>
-	  <addr_server>175.125.95.163</addr_server>
-	  <socket_data>3032</socket_data>
-	  <socket_prematch>3033</socket_prematch>
-	  <socket_live>3031</socket_live>
-	  <http_port>3034</http_port>
-	  <power_server>42.127.251.14:3030</power_server>
+  
+	  <lsports_address>127.0.0.1</lsports_address>
+	  <lsports_prematch_live>3010</lsports_prematch_live>
+	  <lsports_inplay_live>3011</lsports_inplay_live>
+	  <lsports_prematch_data>3012</lsports_prematch_data>
+	  <lsports_inplay_data>3013</lsports_inplay_data>
+	  <lsports_schedule>3014</lsports_schedule>
+	  <lsports_http_port>3015</lsports_http_port>
+  
+	  <power_server>127.0.0.1:5000</power_server>
 	  <use_prematch>yes</use_prematch>
 	  <use_live>yes</use_live>
-	  <use_powerball>no</use_powerball>
-	  <use_powerladder>no</use_powerladder>
+	  <use_powerball>yes</use_powerball>
+	  <use_powerladder>yes</use_powerladder>
 	  <server_http>3001</server_http>
 	  <server_addr>211.115.107.17</server_addr>
 	  <server_port>8443</server_port>
+	  <server_mini_port>2053</server_mini_port>
 	  <use_wss>yes</use_wss>
-	  <use_sports_server>yes</use_sports_server>
 </config>

@@ -58,7 +58,7 @@ namespace LSportsServer
         public int m_nFamily;
         public int m_nUse;
         public int m_nPeriod;
-        public float m_fRate;
+        public double m_fRate;
     }
 
     public class MPeriod : MBase
@@ -109,12 +109,12 @@ namespace LSportsServer
         public string m_strHBetCode;
         public string m_strDBetCode;
         public string m_strABetCode;
-        public float m_fHRate;
-        public float m_fDRate;
-        public float m_fARate;
-        public float m_fHBase;
-        public float m_fDBase;
-        public float m_fABase;
+        public double m_fHRate;
+        public double m_fDRate;
+        public double m_fARate;
+        public double m_fHBase;
+        public double m_fDBase;
+        public double m_fABase;
         public string m_strHLine;
         public string m_strDLine;
         public string m_strALine;
@@ -128,6 +128,7 @@ namespace LSportsServer
         public int m_nWin;
         public int m_nResult;
         public int m_nViewFlag;
+        public double m_nTimeTick;
     }
 
     public class MBetting : MBase
@@ -136,10 +137,10 @@ namespace LSportsServer
         public int m_nMemberSn;
         public string m_strBettingNo;
         public int m_nSelectNo;
-        public float m_fHomeRate;
-        public float m_fAwayRate;
-        public float m_fDrawRate;
-        public float m_fSelectRate;
+        public double m_fHomeRate;
+        public double m_fAwayRate;
+        public double m_fDrawRate;
+        public double m_fSelectRate;
         public string m_strBetID;
         public int m_nGameType;
         public int m_nResult;

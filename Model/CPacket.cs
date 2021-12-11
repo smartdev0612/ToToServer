@@ -89,12 +89,12 @@ namespace LSportsServer
         public string m_nHBetCode;        // MBetRate.m_nHBetCode
         public string m_nDBetCode;        // MBetRate.m_nDBetCode
         public string m_nABetCode;        // MBetRate.m_nABetCode
-        public float m_fHRate;         // MBetRate.m_fHRate
-        public float m_fDRate;         // MBetRate.m_fDRate
-        public float m_fARate;         // MBetRate.m_fARate
-        public float m_fHBase;         // MBetRate.m_fHBase
-        public float m_fDBase;         // MBetRate.m_fDBase
-        public float m_fABase;         // MBetRate.m_fABase
+        public double m_fHRate;         // MBetRate.m_fHRate
+        public double m_fDRate;         // MBetRate.m_fDRate
+        public double m_fARate;         // MBetRate.m_fARate
+        public double m_fHBase;         // MBetRate.m_fHBase
+        public double m_fDBase;         // MBetRate.m_fDBase
+        public double m_fABase;         // MBetRate.m_fABase
         public string m_strHLine;       // MBetRate.m_strHLine
         public string m_strDLine;       // MBetRate.m_strDLine
         public string m_strALine;       // MBetRate.m_strALine

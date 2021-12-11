@@ -53,15 +53,21 @@ namespace LSportsServer.Controllers
                     continue;
 
 
-                float fRate = packet.fRate / clsMarket.m_fRate;
+                double fRate = packet.fRate / clsMarket.m_fRate;
                 clsMarket.m_fRate = packet.fRate;
 
                 List<CGame> lstGame = CGlobal.GetGameList();
                 lstGame = lstGame.FindAll(value => value != null && value.GetPrematchBetRateList().Exists(val => val.m_nMarket == packet.nMarket) || value.GetLiveBetRateList().Exists(val => val.m_nMarket == packet.nMarket));
-                foreach(CGame clsGame in lstGame.ToList())
+
+                int nIndex = 0;
+                while(nIndex < lstGame.Count)
                 {
-                    clsGame.GetPrematchBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value=>value.ChangeAdminRate(1, fRate));
-                    clsGame.GetLiveBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value=>value.ChangeAdminRate(2, fRate));
+                    CGame clsGame = lstGame[nIndex];
+                    if (clsGame == null)
+                        break;
+                    clsGame.GetPrematchBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value => value.ChangeAdminRate(1, fRate));
+                    clsGame.GetLiveBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value => value.ChangeAdminRate(2, fRate));
+                    nIndex++;
                 }
             }
         }

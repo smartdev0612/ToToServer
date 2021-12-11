@@ -21,7 +21,7 @@ namespace LSportsServer
             m_nFamily = CGlobal.ParseInt(info["mfamily"]);
             m_nUse = CGlobal.ParseInt(info["muse"]);
             m_nPeriod = CGlobal.ParseInt(info["period"]);
-            m_fRate = Convert.ToSingle(info["frate"]);
+            m_fRate = Convert.ToDouble(info["frate"]);
         }
     }
 }

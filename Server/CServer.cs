@@ -51,7 +51,7 @@ namespace LSportsServer
             {
                 strPacket = e.Data.ToString();
             }
-            CGlobal.ShowConsole(strPacket);
+            //CGlobal.ShowConsole(strPacket);
             if (strPacket == "Server")
             {
                 CGlobal.SetBroadcastSocket(this);
@@ -195,7 +195,7 @@ namespace LSportsServer
         {
             CGlobal.ShowConsole("Socket Server Error!");
             CGlobal.ShowConsole(e.Message);
-            (sender as WebSocket).Close();
+            (sender as WebSocket).Connect();
         }
 
         private static void Ws_OnOpen(object sender, EventArgs e)

@@ -156,7 +156,7 @@ namespace LSportsServer
         {
             string sql = $"UPDATE tb_subchild SET home_rate = {model.m_fHBase}, draw_rate = {model.m_fDBase}, away_rate = {model.m_fABase}, win = {model.m_nWin}, result = {model.m_nResult}, new_home_rate = {model.m_fHRate}, new_draw_rate = {model.m_fDRate}, new_away_rate = {model.m_fARate}, home_betid = '{model.m_strHBetCode}', draw_betid = '{model.m_strDBetCode}', away_betid = '{model.m_strABetCode}', home_line = '{model.m_strHLine}', draw_line = '{model.m_strDLine}', away_line = '{model.m_strALine}', home_name = '{model.m_strHName}', draw_name = '{model.m_strDName}', away_name = '{model.m_strAName}', status = {model.m_nStatus}, base_line = '{model.m_strBLine}', apiName = '{model.m_strApi}', live = {model.m_nLive}, strTime = '{CMyTime.GetMyTimeStr()}' WHERE sn = {model.m_nCode}";
 
-            CMySql.ExcuteQuery(sql);
+            CMySql.PushCommonQuery(sql);
         }
 
         public static void SaveScoreInfoToDB(MScore model)

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "v7jAnU6t1DtaiS9OiAd9AXGM4CZoIsmx9F03JVwOUbj3mna0/vkPPWrXdWV6YMr7H8kbDeO0MIBt7qNfjKQR4w==",
+  "dgSpecHash": "Yrk6XDCF0k/TTOgy5023Faia8b9BEdyZfbT0ejwGPTamMUx9RpxNwLZHlXoR9nH8PhgzHXQWQ0DHlCwC5dGYuw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Administrator\\Documents\\Server\\ToToServer\\LSportsServer.csproj",
+  "projectFilePath": "D:\\project\\server\\ToToServer\\LSportsServer.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Administrator\\.nuget\\packages\\bouncycastle.netcore\\1.8.5\\bouncycastle.netcore.1.8.5.nupkg.sha512",
     "C:\\Users\\Administrator\\.nuget\\packages\\google.protobuf\\3.14.0\\google.protobuf.3.14.0.nupkg.sha512",

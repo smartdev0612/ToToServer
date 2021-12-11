@@ -18,11 +18,11 @@ namespace LSportsServer
             switch (packet.m_nPacketCode)
             {
                 case CDefine.PACKET_SPORT_LIST:
-                    CGlobal.ShowConsole("- Sports LIST Request");
+                    //CGlobal.ShowConsole("- Sports LIST Request");
                     OnRequestList(packet.m_strPacket);
                     break;
                 case CDefine.PACKET_SPORT_AJAX:
-                    CGlobal.ShowConsole("- Sports AJAX Request");
+                    //CGlobal.ShowConsole("- Sports AJAX Request");
                     OnAjaxRequestList(packet.m_strPacket);
                     break;
                 case CDefine.PACKET_SPORT_BET:
@@ -37,44 +37,7 @@ namespace LSportsServer
                     }
                     
                     break;
-                case CDefine.PACKET_POWERBALL_BET:
-                    try
-                    {
-                        OnPowerballBetting(packet.m_strPacket, packet.m_nPacketCode);
-                    }
-                    catch
-                    {
-                        ReturnPacket(CDefine.PACKET_POWERBALL_BET, "배팅처리가 되지 않았습니다. 다시 시도해주세요.", 1);
-                        return;
-                    }
-
-                    break;
-
-                case CDefine.PACKET_POWERLADDER_BET:
-                    try
-                    {
-                        OnPowerballBetting(packet.m_strPacket, packet.m_nPacketCode);
-                    }
-                    catch
-                    {
-                        ReturnPacket(CDefine.PACKET_POWERBALL_BET, "배팅처리가 되지 않았습니다. 다시 시도해주세요.", 1);
-                        return;
-                    }
-
-                    break;
-
-                case CDefine.PACKET_KENOLADDER_BET:
-                    try
-                    {
-                        OnPowerballBetting(packet.m_strPacket, packet.m_nPacketCode);
-                    }
-                    catch
-                    {
-                        ReturnPacket(CDefine.PACKET_POWERBALL_BET, "배팅처리가 되지 않았습니다. 다시 시도해주세요.", 1);
-                        return;
-                    }
-
-                    break;
+                
             }
         }
 
@@ -671,9 +634,9 @@ namespace LSportsServer
 
                 int childSn = CGlobal.ParseInt(data_detail[0]);
                 int selected = CGlobal.ParseInt(data_detail[1]);
-                float rate1 = Convert.ToSingle(data_detail[4]);
-                float rate2 = Convert.ToSingle(data_detail[5]);
-                float rate3 = Convert.ToSingle(data_detail[6]);
+                double rate1 = Convert.ToDouble(data_detail[4]);
+                double rate2 = Convert.ToDouble(data_detail[5]);
+                double rate3 = Convert.ToDouble(data_detail[6]);
                 double selectedRate = Convert.ToDouble(data_detail[7]);
                 int gameType = CGlobal.ParseInt(data_detail[8]);
                 int subChildSn = CGlobal.ParseInt(data_detail[9]);
@@ -688,7 +651,7 @@ namespace LSportsServer
 
                 if (data_detail[12] == "이벤트")
                 {
-                    rate1 = Convert.ToSingle(data_detail[7]);
+                    rate1 = Convert.ToDouble(data_detail[7]);
                     rate2 = rate1;
                     rate3 = rate1;
 
@@ -735,7 +698,7 @@ namespace LSportsServer
                     clsBetting.m_fHomeRate = rate1;
                     clsBetting.m_fDrawRate = rate2;
                     clsBetting.m_fAwayRate = rate3;
-                    clsBetting.m_fSelectRate = Convert.ToSingle(selectedRate);
+                    clsBetting.m_fSelectRate = selectedRate;
                     clsBetting.m_strBetID = Convert.ToString(betid);
                     clsBetting.m_nGameType = gameType;
                     clsBetting.m_nResult = 0;
@@ -1077,12 +1040,11 @@ namespace LSportsServer
 
         public void SendGameListPacket(int nPacketCode)
         {
-            List<CGame> lstGame = null;
+            List<CGame> lstGame = CGlobal.GetGameList();
             List<CGame> totalGame = null;
 
             try
             {
-                lstGame = CGlobal.GetGameList();
                 lstGame = lstGame.FindAll(value => value != null && value.CheckGame() && value.m_nCountry > 0 && value.m_nBlock == 0);//
             }
             catch(Exception err)
@@ -1101,7 +1063,7 @@ namespace LSportsServer
                 return;
             }
 
-            totalGame = lstGame;
+            totalGame = lstGame.ToList();
 
             int nSports = 0;
             if (m_reqParam == null)
@@ -1329,7 +1291,7 @@ namespace LSportsServer
 
             }
 
-            CGlobal.ShowConsole("* Sent Game List Packet!");
+            //CGlobal.ShowConsole("* Sent Game List Packet!");
             ReturnPacket(nPacketCode, JsonConvert.SerializeObject(lstSendPacket), 0, m_reqParam.m_nSendType);
 
         }

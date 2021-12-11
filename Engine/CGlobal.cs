@@ -19,11 +19,11 @@ namespace LSportsServer
 
         private static List<CGame> _lstGame;
         private static List<CBetting> _lstApiBetting;
-        private static Queue<string>[] _lstStrLSportsPacket;
         private static List<long> _lstlnGetApiFixtureID;
         private static List<long> _lstlnGetLiveFixtureID;
 
         private static CGameServer _wsServer;
+        private static CMiniGameServer _wsMiniServer;
 
         public static object _objLock = new object();
 
@@ -40,27 +40,19 @@ namespace LSportsServer
             _lstGame = new List<CGame>();
             _lstApiBetting = new List<CBetting>();
 
-            _lstStrLSportsPacket = new Queue<string>[3]
-            {
-                new Queue<string>(), new Queue<string>(), new Queue<string>()
-            };
             _lstlnGetApiFixtureID = new List<long>();
             _lstlnGetLiveFixtureID = new List<long>();
 
             new Thread(CMySql.ExcuteCommonQuery).Start();
 
             CServer.Start();
+            CMiniServer.Start();
 
-            if (CDefine.USE_SPORTS_SERVER == "yes")
-            {
-                CLSports.Connect();
-                CEngine.StartRealProcess();
-                LoadInfoFromDB();
-            }
-            else
-            {
-                CPowerball.StartPowerball();
-            }
+            CLSports.Connect();
+            CEngine.StartRealProcess();
+            LoadInfoFromDB();
+
+            CPowerball.StartPowerball();
         }
 
         private static void LoadInfoFromDB()
@@ -266,7 +258,7 @@ namespace LSportsServer
 
         public static CGame GetGameInfoByFixtureID(long nFixtureID)
         {
-            return _lstGame.Find(value => value.m_nFixtureID == nFixtureID);
+            return _lstGame.Find(value => value != null && value.m_nFixtureID == nFixtureID);
         }
 
         public static List<CGame> GetGameList()
@@ -350,106 +342,33 @@ namespace LSportsServer
             }
         }
 
-        public static void AddLSportsPacket(int nFlag, string strPacket)
-        {
-            lock (_lstStrLSportsPacket[nFlag])
-            {
-                _lstStrLSportsPacket[nFlag].Enqueue(strPacket);
-            }
-        }
-
-        public static string GetLSportsPacket(int nFlag)
-        {
-            string strPacket = string.Empty;
-            lock(_lstStrLSportsPacket[nFlag])
-            {
-                if (_lstStrLSportsPacket[nFlag].Count > 0)
-                    strPacket = _lstStrLSportsPacket[nFlag].Dequeue();
-            }
-
-            return strPacket;
-        }
-
         public static void ShowConsole(string strMsg)
         {
             Console.WriteLine($"{CMyTime.GetMyTimeStr()}        {strMsg}");
         }
 
-        //public static void PushGetApiFixtureID(long nFixtureID)
-        //{
-        //    lock(_lstlnGetApiFixtureID)
-        //    {
-        //        if(_lstlnGetApiFixtureID.Exists(value=>value == nFixtureID) == false)
-        //        {
-        //            _lstlnGetApiFixtureID.Add(nFixtureID);
-        //            CGlobal.ShowConsole("PushApiFixtureID =>" + _lstlnGetApiFixtureID.Count);
-        //        }
-        //    }
-        //}
-
-        //public static long PopGetApiFixtureID()
-        //{
-        //    long nFixtureID = 0;
-        //    lock (_lstlnGetApiFixtureID)
-        //    {
-        //        if(_lstlnGetApiFixtureID.Count > 0)
-        //        {
-        //            nFixtureID = _lstlnGetApiFixtureID[0];
-        //            CGlobal.ShowConsole("PopApiFixtureID =>" + _lstlnGetApiFixtureID.Count);
-        //        }
-                    
-        //    }
-
-        //    return nFixtureID;
-        //}
-
-        //public static void RemoveGetApiFixtureID(long nFixtureID)
-        //{
-        //    lock (_lstlnGetApiFixtureID)
-        //    {
-        //        _lstlnGetApiFixtureID.RemoveAll(value => value == nFixtureID);
-        //    }
-        //}
-
-
-        //public static void PushGetLiveFixtureID(long nFixtureID)
-        //{
-        //    lock (_lstlnGetLiveFixtureID)
-        //    {
-        //        if (_lstlnGetLiveFixtureID.Exists(value => value == nFixtureID) == false)
-        //        {
-        //            _lstlnGetLiveFixtureID.Add(nFixtureID);
-        //            CGlobal.ShowConsole("PushLiveFixtureID =>" + _lstlnGetLiveFixtureID.Count);
-        //        }
-        //    }
-        //}
-
-        //public static long PopGetLiveFixtureID()
-        //{
-        //    long nFixtureID = 0;
-        //    lock (_lstlnGetLiveFixtureID)
-        //    {
-        //        if (_lstlnGetLiveFixtureID.Count > 0)
-        //        {
-        //            nFixtureID = _lstlnGetLiveFixtureID[0];
-        //            CGlobal.ShowConsole("PopLiveFixtureID =>" + _lstlnGetLiveFixtureID.Count);
-        //        }
-        //    }
-
-        //    return nFixtureID;
-        //}
-
-        //public static void RemoveGetLiveFixtureID(long nFixtureID)
-        //{
-        //    lock (_lstlnGetLiveFixtureID)
-        //    {
-        //        _lstlnGetLiveFixtureID.RemoveAll(value => value == nFixtureID);
-        //    }
-        //}
-
-        public static async Task WriteLogAsync(string strLog)
+        
+        public static async Task WriteFixtureLogAsync(string strLog)
         {
-            using StreamWriter file = new("WriteLog.txt", append: true);
+            using StreamWriter file = new("WriteFixtureLog.txt", append: true);
+            await file.WriteLineAsync(strLog);
+        }
+
+        public static async Task WriteScoreLogAsync(string strLog)
+        {
+            using StreamWriter file = new("WriteScoreLog.txt", append: true);
+            await file.WriteLineAsync(strLog);
+        }
+
+        public static async Task WriteMarketLogAsync(string strLog)
+        {
+            using StreamWriter file = new("WriteMarketLog.txt", append: true);
+            await file.WriteLineAsync(strLog);
+        }
+
+        public static async Task WriteResultLogAsync(string strLog)
+        {
+            using StreamWriter file = new("WriteResultLog.txt", append: true);
             await file.WriteLineAsync(strLog);
         }
 
@@ -461,6 +380,11 @@ namespace LSportsServer
         public static void SetBroadcastSocket(CGameServer ws)
         {
             _wsServer = ws;
+        }
+
+        public static void SetBroadcastMiniSocket(CMiniGameServer ws)
+        {
+            _wsMiniServer = ws;
         }
 
         public static void BroadCastPowerTime(int nGNum, int nDNum, string strTime)
@@ -479,9 +403,9 @@ namespace LSportsServer
             string strPacket = $"{strYear}|{strMonth}|{strDay}|{strHour}|{strMin}|{strSec}|{nGNum}|{strTime}|{nDNum}";
             packet.m_strPacket = strPacket;
             
-            if (_wsServer != null)
+            if (_wsMiniServer != null)
             {
-                _wsServer.BroadCastPacket(packet);
+                _wsMiniServer.BroadCastPacket(packet);
                 CGlobal.ShowConsole("Send Mini Time");
             }
             else

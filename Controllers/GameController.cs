@@ -66,16 +66,16 @@ namespace LSportsServer.Controllers
             string strGameTime = Convert.ToString(param["strGameTime"]);
             int nGameType = CGlobal.ParseInt(param["nGameType"]);
             int nFamilyID = CGlobal.ParseInt(param["nFamilyID"]);
-            float fHomeRate = Convert.ToSingle(param["fHomeRate"]);
-            float fAwayRate = 0.0f;
-            float fDrawRate = Convert.ToSingle(param["fDrawRate"]);
+            double fHomeRate = Convert.ToDouble(param["fHomeRate"]);
+            double fAwayRate = 0.0f;
+            double fDrawRate = Convert.ToDouble(param["fDrawRate"]);
             string strHomeLine = "";
             string strHomeName = "";
             switch(nFamilyID)
             {
                 case 1:     // 승무패
                 case 12:    // 더블찬스
-                    fAwayRate = Convert.ToSingle(param["fAwayRate"]);
+                    fAwayRate = Convert.ToDouble(param["fAwayRate"]);
                     break;
                 case 7:     // 언더오버
                 case 8:     // 아시안핸디캡

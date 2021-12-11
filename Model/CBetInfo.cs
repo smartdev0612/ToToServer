@@ -17,6 +17,7 @@ namespace LSportsServer
         public string m_strLine;
         public string m_strBaseLine;
         public int m_nStatus;
+        public double m_nTimeTick;
 
         public CBetInfo(long nFixtureID)
         {
@@ -68,7 +69,13 @@ namespace LSportsServer
                 {
                     m_strBaseLine = Convert.ToString(prop.Value);
                 }
+                else if(prop.Name == "LastUpdate")
+                {
+                    DateTime dt = Convert.ToDateTime(prop.Value);
+                    this.m_nTimeTick = dt.Ticks;
+                }
             }
         }
+
     }
 }

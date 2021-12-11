@@ -36,12 +36,12 @@ namespace LSportsServer
             m_strHBetCode = Convert.ToString(info["home_betid"]);
             m_strDBetCode = Convert.ToString(info["draw_betid"]);
             m_strABetCode = Convert.ToString(info["away_betid"]);
-            m_fHRate = Convert.ToSingle(info["new_home_rate"]);
-            m_fDRate = Convert.ToSingle(info["new_draw_rate"]);
-            m_fARate = Convert.ToSingle(info["new_away_rate"]);
-            m_fHBase = Convert.ToSingle(info["home_rate"]);
-            m_fDBase = Convert.ToSingle(info["draw_rate"]);
-            m_fABase = Convert.ToSingle(info["away_rate"]);
+            m_fHRate = Convert.ToDouble(info["new_home_rate"]);
+            m_fDRate = Convert.ToDouble(info["new_draw_rate"]);
+            m_fARate = Convert.ToDouble(info["new_away_rate"]);
+            m_fHBase = Convert.ToDouble(info["home_rate"]);
+            m_fDBase = Convert.ToDouble(info["draw_rate"]);
+            m_fABase = Convert.ToDouble(info["away_rate"]);
             m_strHLine = Convert.ToString(info["home_line"]);
             m_strDLine = Convert.ToString(info["draw_line"]);
             m_strALine = Convert.ToString(info["away_line"]);
@@ -116,6 +116,7 @@ namespace LSportsServer
             m_nWin = clsRate.m_nWin;
             m_nResult = clsRate.m_nResult;
             m_nViewFlag = clsRate.m_nViewFlag;
+            m_nTimeTick = clsRate.m_nTimeTick;
         }
 
         private int GetFamily()
@@ -134,6 +135,10 @@ namespace LSportsServer
                 return;
             }
 
+            if (this.m_nTimeTick > info.m_nTimeTick)
+                return;
+
+            this.m_nTimeTick = info.m_nTimeTick;
             if (nIndex == 0)
             {
                 m_strHBetCode = info.m_strBetID;
@@ -225,9 +230,11 @@ namespace LSportsServer
                     CGlobal.RemoveGame(m_clsGame);
                 }
             }
+
+            
         }
 
-        public void ChangeAdminRate(int nLive, float fRate = 0.0f)
+        public void ChangeAdminRate(int nLive, double fRate = 0.0)
         {
             CMarket clsMarket = CGlobal.GetMarketInfoByCode(m_nMarket);
             if (clsMarket.m_nPeriod < m_clsGame.m_nPeriod && m_nStatus < 2)
@@ -235,13 +242,12 @@ namespace LSportsServer
                 m_nStatus = 2;
             }
 
-
             if (fRate == 0.0f)
                 fRate = clsMarket.m_fRate;
 
-            m_fHRate = Convert.ToSingle(Math.Round(m_fHRate * fRate, 2));
-            m_fDRate = Convert.ToSingle(Math.Round(m_fDRate * fRate, 2));
-            m_fARate = Convert.ToSingle(Math.Round(m_fARate * fRate, 2));
+            m_fHRate = Math.Round(m_fHRate * fRate, 2);
+            m_fDRate = Math.Round(m_fDRate * fRate, 2);
+            m_fARate = Math.Round(m_fARate * fRate, 2);
 
             
             if (clsMarket.m_nFamily == 1)
@@ -281,7 +287,7 @@ namespace LSportsServer
                     }
                     else if (m_clsGame.m_nSports == 154830) // 배구
                     {
-                        if (m_fHRate < 1.8f || m_fHRate > 1.95f || m_fARate < 1.8f || m_fARate > 1.95f)
+                        if (m_fHRate < 1.5f || m_fARate < 1.5f)
                         {
                             m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                         }
@@ -372,7 +378,7 @@ namespace LSportsServer
             }
             m_nResult = 1;
 
-            // CEntry.SaveBetRateInfoToDB(this);
+            CEntry.SaveBetRateInfoToDB(this);
 
 
             /*if (m_nMarket == 3 || m_nMarket == 342 || m_nMarket == 1558)
