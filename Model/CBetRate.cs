@@ -9,7 +9,7 @@ namespace LSportsServer
     {
         public double m_dOrder;             //현시순서를 정렬하기 위한 변수  
         public CGame m_clsGame;
-
+        private double[] m_lstTicks = {0, 0, 0};
 
         public int m_nFamily => GetFamily();
 
@@ -116,7 +116,7 @@ namespace LSportsServer
             m_nWin = clsRate.m_nWin;
             m_nResult = clsRate.m_nResult;
             m_nViewFlag = clsRate.m_nViewFlag;
-            m_nTimeTick = clsRate.m_nTimeTick;
+            //m_nTimeTick = clsRate.m_nTimeTick;
         }
 
         private int GetFamily()
@@ -135,10 +135,10 @@ namespace LSportsServer
                 return;
             }
 
-            if (this.m_nTimeTick > info.m_nTimeTick)
+            if (this.m_lstTicks[nIndex] > info.m_nTimeTick)
                 return;
 
-            this.m_nTimeTick = info.m_nTimeTick;
+            this.m_lstTicks[nIndex] = info.m_nTimeTick;
             if (nIndex == 0)
             {
                 m_strHBetCode = info.m_strBetID;
@@ -252,12 +252,19 @@ namespace LSportsServer
             
             if (clsMarket.m_nFamily == 1)
             {
-                if (m_fHRate < 1.1f || m_fDRate < 1.1f || m_fARate < 1.1f)
+                if (m_fHRate < 1.0f || m_fDRate < 1.0f || m_fARate < 1.0f)
                 {
                     m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                 }
             }
-            else if(clsMarket.m_nFamily == 2 || clsMarket.m_nFamily == 10)
+            else if(clsMarket.m_nFamily == 2)
+            {
+                if (m_fHRate < 1.0f || m_fARate < 1.0f)
+                {
+                    m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                }
+            }
+            else if (clsMarket.m_nFamily == 10)
             {
                 if (m_fHRate < 1.1f || m_fARate < 1.1f)
                 {

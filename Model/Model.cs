@@ -128,7 +128,7 @@ namespace LSportsServer
         public int m_nWin;
         public int m_nResult;
         public int m_nViewFlag;
-        public double m_nTimeTick;
+        //public double m_nTimeTick;
     }
 
     public class MBetting : MBase
