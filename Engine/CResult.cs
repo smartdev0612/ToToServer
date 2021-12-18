@@ -86,6 +86,7 @@ namespace LSportsServer
                 string logo = Convert.ToString(memberInfo["logo"]);
                 int betMoney = CGlobal.ParseInt(betInfo["bet_money"]);
                 int nWinCash = 0;
+                fWinRate = Math.Round(fWinRate, 2);
 
                 //모두 취소된 게임
                 if (nTotalCnt == nCancelCnt)

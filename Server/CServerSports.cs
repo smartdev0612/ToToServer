@@ -242,7 +242,7 @@ namespace LSportsServer
                 //-> 총 배당율 합계 계산. 2016.08.10
                 sumSelectRate = sumSelectRate * selectedRate;
             }
-
+            sumSelectRate = Math.Round(sumSelectRate, 2);
             double resultRate = Convert.ToDouble(sumSelectRate.ToString("0.00"));
             if (resultRate > 100)
             {

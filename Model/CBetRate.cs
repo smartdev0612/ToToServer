@@ -271,7 +271,7 @@ namespace LSportsServer
                     m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                 }
             }
-            else if(clsMarket.m_nFamily == 7 || clsMarket.m_nFamily == 8 || clsMarket.m_nFamily == 9)
+            else if(clsMarket.m_nFamily == 7 || clsMarket.m_nFamily == 8 || clsMarket.m_nFamily == 9) // 핸디캡, 언더오버
             {
                 if(nLive < 2) // 프리매치
                 {
@@ -291,7 +291,7 @@ namespace LSportsServer
                                 m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                             }
                         }
-                    }
+                    } 
                     else if (m_clsGame.m_nSports == 154830) // 배구
                     {
                         if (m_fHRate < 1.5f || m_fARate < 1.5f)
@@ -327,6 +327,14 @@ namespace LSportsServer
                 else // 인플레이
                 {
                     if (m_fHRate < 1.1f || m_fARate < 1.1f)
+                    {
+                        m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
+                    }
+                }
+
+                if (m_clsGame.m_nSports == 48242) // 농구
+                {
+                    if (m_fHRate < 1.3f || m_fARate < 1.3f)
                     {
                         m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                     }
