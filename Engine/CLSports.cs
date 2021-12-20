@@ -140,7 +140,8 @@ namespace LSportsServer
                             CGlobal.AddGameInfo(clsGame);
                         }
                     }
-                    else
+
+                    if(clsGame != null)
                     {
                         if (objBody["Markets"] == null || !objBody["Markets"].HasValues)
                         {
@@ -243,7 +244,8 @@ namespace LSportsServer
                             CGlobal.AddGameInfo(clsGame);
                         }
                     }
-                    else
+
+                    if(clsGame != null)
                     {
                         clsGame.UpdateInfo(objFixture);
                         clsGame.UpdateMarket(lstMarket, 3);
@@ -378,7 +380,8 @@ namespace LSportsServer
                         CGlobal.AddGameInfo(clsGame);
                     }
                 } 
-                else
+                
+                if(clsGame != null)
                 {
                     clsGame.UpdateInfo(objFixture);
                 }
