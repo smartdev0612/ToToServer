@@ -92,12 +92,25 @@ namespace LSportsServer
         private static void OnRecvPrematchLive(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data.ToString();
+            ThreadPool.QueueUserWorkItem(StartPrematchParsingData, strPacket);
+        }
+
+        private static void StartPrematchParsingData(object objParam)
+        {
+            string strPacket = (string)objParam;
             StartParsingData(strPacket, CDefine.LSPORTS_PREMATCH);
         }
+       
 
         private static void OnRecvPrematchData(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data.ToString();
+            ThreadPool.QueueUserWorkItem(StartPrematchHttpData, strPacket);
+        }
+
+        private static void StartPrematchHttpData(object objParam)
+        {
+            string strPacket = (string)objParam;
             try
             {
                 JObject objMarkets = JObject.Parse(strPacket);
@@ -120,28 +133,35 @@ namespace LSportsServer
                     CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
                     if (clsGame == null)
                     {
-                        clsGame = new CGame(nFixtureID);
-                        CGlobal.AddGameInfo(clsGame);
+                        // 게임시작시간이 현재 시간으로부터 3일후 이내인 경기들만 창조. 
+                        if (CheckAddGame(objFixture))
+                        {
+                            clsGame = new CGame(nFixtureID);
+                            CGlobal.AddGameInfo(clsGame);
+                        }
                     }
-                    if (objBody["Markets"] == null || !objBody["Markets"].HasValues)
+                    else
                     {
-                        continue;
+                        if (objBody["Markets"] == null || !objBody["Markets"].HasValues)
+                        {
+                            continue;
+                        }
+
+                        List<JToken> lstMarket = objBody["Markets"].ToList();
+
+                        if (lstMarket.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        JToken objScore = objBody;
+
+                        clsGame.UpdateInfo(objFixture);
+                        clsGame.UpdateMarket(lstMarket, 0);
+                        clsGame.UpdateScore(objScore);
+
+                        clsGame.SetCheckMarket();
                     }
-
-                    List<JToken> lstMarket = objBody["Markets"].ToList();
-
-                    if (lstMarket.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    JToken objScore = objBody;
-
-                    clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, 0);
-                    clsGame.UpdateScore(objScore);
-
-                    clsGame.SetCheckMarket();
                 }
             }
             catch
@@ -153,12 +173,25 @@ namespace LSportsServer
         private static void OnRecvInplayLive(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data.ToString();
+            ThreadPool.QueueUserWorkItem(StartLiveParsingData, strPacket);
+        }
+
+        private static void StartLiveParsingData(object objParam)
+        {
+            string strPacket = (string)objParam;
             StartParsingData(strPacket, CDefine.LSPORTS_INPLAY);
         }
 
         private static void OnRecvInplayData(object sender, MessageEventArgs e)
         {
             string strPacket = e.Data.ToString();
+            ThreadPool.QueueUserWorkItem(StartInplayHttpData, strPacket);
+        }
+
+        private static void StartInplayHttpData(object objParam)
+        {
+            string strPacket = (string)objParam;
+
             try
             {
                 JObject objMarkets = JObject.Parse(strPacket);
@@ -203,15 +236,21 @@ namespace LSportsServer
                     CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
                     if (clsGame == null)
                     {
-                        clsGame = new CGame(nFixtureID);
-                        CGlobal.AddGameInfo(clsGame);
+                        // 게임시작시간이 현재 시간으로부터 3일후 이내인 경기들만 창조. 
+                        if (CheckAddGame(objFixture))
+                        {
+                            clsGame = new CGame(nFixtureID);
+                            CGlobal.AddGameInfo(clsGame);
+                        }
                     }
+                    else
+                    {
+                        clsGame.UpdateInfo(objFixture);
+                        clsGame.UpdateMarket(lstMarket, 3);
+                        clsGame.UpdateScore(objScore);
 
-                    clsGame.UpdateInfo(objFixture);
-                    clsGame.UpdateMarket(lstMarket, 3);
-                    clsGame.UpdateScore(objScore);
-
-                    clsGame.SetCheckMarket();
+                        clsGame.SetCheckMarket();
+                    }
                 }
             }
             catch
@@ -257,7 +296,7 @@ namespace LSportsServer
             }
         }
 
-        private static void StartParsingData(string strPacket, int nFlag)
+        private static void StartParsingData(string strPacket, int nLive)
         {
             try
             {
@@ -274,23 +313,25 @@ namespace LSportsServer
                     case 1:
                         // CGlobal.ShowConsole("GameFixture");
                         // CGlobal.WriteFixtureLogAsync(strPacket);
-                        GameFixture(objBody, nFlag);
-                        string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
+                        GameFixture(objBody, nLive);
+                        //string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
                         // CGlobal.ShowConsole(strBettingListLog);
                         break;
                     case 2:
                         // CGlobal.ShowConsole("GameScore");
                         // CGlobal.WriteScoreLogAsync(strPacket);
-                        GameScore(objBody, nFlag);
+                        GameScore(objBody, nLive);
                         break;
                     case 3:
                         // CGlobal.ShowConsole("GameMarket");
-                        GameMarket(objBody, nFlag);
+                        GameMarket(objBody, nLive);
+                        //if(nLive == CDefine.LSPORTS_INPLAY)
+                        //    _ = CGlobal.WriteMarketLogAsync(strPacket);
                         break;
                     case 35:
                         // CGlobal.ShowConsole("GameResult");
                         // CGlobal.WriteResultLogAsync(strPacket);
-                        GameResult(objBody, nFlag);
+                        GameResult(objBody, nLive);
                         break;
                 }
             }
@@ -298,6 +339,22 @@ namespace LSportsServer
             {
                 Console.WriteLine(error.Message);
             }
+        }
+
+        // 게임시작시간이 현재 시간으로부터 3일후이면 True, 그 이후 경기이면 False.
+        private static bool CheckAddGame(JToken objFixture)
+        {
+            bool bFlag = false;
+            JToken objInfo = objFixture["Fixture"];
+            DateTime dateTime = CMyTime.ConvertStrToTime(Convert.ToString(objInfo["StartDate"]));
+            DateTime startTime = CMyTime.ConvertFromUnixTimestamp(CMyTime.ConvertToUnixTimestamp(dateTime));
+            DateTime dtLimit = CMyTime.GetMyTime().AddDays(3);
+            if (startTime < dtLimit)
+            {
+                bFlag = true;
+            }
+
+            return bFlag;
         }
 
         private static void GameFixture(JToken objBody, int nLive)
@@ -314,11 +371,17 @@ namespace LSportsServer
                 CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
                 if (clsGame == null)
                 {
-                    clsGame = new CGame(nFixtureID);
-                    CGlobal.AddGameInfo(clsGame);
+                    // 게임시작시간이 현재 시간으로부터 3일후 이내인 경기들만 창조. 
+                    if(CheckAddGame(objFixture))
+                    {
+                        clsGame = new CGame(nFixtureID);
+                        CGlobal.AddGameInfo(clsGame);
+                    }
+                } 
+                else
+                {
+                    clsGame.UpdateInfo(objFixture);
                 }
-
-                clsGame.UpdateInfo(objFixture);
             }
 
             return;

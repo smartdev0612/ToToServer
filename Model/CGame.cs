@@ -138,7 +138,7 @@ namespace LSportsServer
                 this.m_nStatus = 2;
             }
 
-            CBetRate clsLiveRate = m_lstLiveBetRate.Find(value => value.CheckWinDrawLose(this.m_nSports));
+            CBetRate clsLiveRate = this.m_lstLiveBetRate.Find(value => value != null && value.CheckWinDrawLose(this.m_nSports));
             if(clsLiveRate == null)
             {
                 //라이브상태일때 승무패가 없다면 프리매치배당을 복사해주어야 한다.
@@ -553,8 +553,6 @@ namespace LSportsServer
 
                 CMarket clsMarket = CGlobal.GetMarketInfoByCode(nMarketID);
 
-                
-
                 if (objProvider["Bets"] == null || !objProvider["Bets"].HasValues)
                     continue;
 
@@ -610,14 +608,19 @@ namespace LSportsServer
 
             if (nLive < 2)
             {
-                clsBetRate = m_lstPrematchBetRate.Find(value => value.m_nMarket == nMarketID);
-                if (clsBetRate == null)
+                List<CBetRate> lstBetRate = m_lstPrematchBetRate.ToList();
+                if(lstBetRate.Count > 0)
                 {
-                    clsBetRate = new CBetRate(this);
-                    clsBetRate.m_nMarket = nMarketID;
-                    clsBetRate.m_strApi = strApi;
-                    AddPrematchBetRate(clsBetRate);
+                    clsBetRate = lstBetRate.Find(value => value.m_nMarket == nMarketID);
+                    if (clsBetRate == null)
+                    {
+                        clsBetRate = new CBetRate(this);
+                        clsBetRate.m_nMarket = nMarketID;
+                        clsBetRate.m_strApi = strApi;
+                        AddPrematchBetRate(clsBetRate);
+                    }
                 }
+                
             }
             else if(nLive == 2)   //traxex
             {
@@ -648,15 +651,19 @@ namespace LSportsServer
 
             if (nLive < 2)
             {
-                clsBetRate = m_lstPrematchBetRate.Find(value => value.m_nMarket == nMarketID && value.m_strBLine == strBaseLine && value.m_strApi == strApi);
-                if (clsBetRate == null)
+                List<CBetRate> lstBetRate = m_lstPrematchBetRate.ToList();
+                if (lstBetRate.Count > 0)
                 {
-                    clsBetRate = new CBetRate(this);
-                    clsBetRate.m_nMarket = nMarketID;
-                    clsBetRate.m_strApi = strApi;
-                    clsBetRate.m_strBLine = strBaseLine;
-                    m_lstPrematchBetRate.Add(clsBetRate);
-                }
+                    clsBetRate = lstBetRate.Find(value => value.m_nMarket == nMarketID && value.m_strBLine == strBaseLine && value.m_strApi == strApi);
+                    if (clsBetRate == null)
+                    {
+                        clsBetRate = new CBetRate(this);
+                        clsBetRate.m_nMarket = nMarketID;
+                        clsBetRate.m_strApi = strApi;
+                        clsBetRate.m_strBLine = strBaseLine;
+                        m_lstPrematchBetRate.Add(clsBetRate);
+                    }
+                }    
             }
             else if(nLive == 2) //traxex
             {
@@ -756,11 +763,15 @@ namespace LSportsServer
         {
             if (nLive < 2)
             {
-                if (m_lstPrematchBetRate.Exists(value => value.m_nMarket == nMarket && value.m_nStatus < 2 && value.m_strApi != strApi))
-                    info.m_nStatus = 2;
+                List<CBetRate> lstPrematchBetRate = m_lstPrematchBetRate.ToList();
+                if(lstPrematchBetRate.Count > 0)
+                {
+                    if (lstPrematchBetRate.Exists(value => value.m_nMarket == nMarket && value.m_nStatus < 2 && value.m_strApi != strApi))
+                        info.m_nStatus = 2;
 
-                if (info.m_nStatus < 2)
-                    m_lstPrematchBetRate.FindAll(value => value.m_nMarket == nMarket && value.m_strApi != strApi).ForEach(value => value.m_nStatus = 2);
+                    if (m_lstPrematchBetRate != null && info.m_nStatus < 2)
+                        m_lstPrematchBetRate.FindAll(value => value.m_nMarket == nMarket && value.m_strApi != strApi).ForEach(value => value.m_nStatus = 2);
+                }
             }
             else
             {

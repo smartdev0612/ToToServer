@@ -363,6 +363,7 @@ namespace LSportsServer
         public static async Task WriteMarketLogAsync(string strLog)
         {
             using StreamWriter file = new("WriteMarketLog.txt", append: true);
+            strLog += $"\n{CMyTime.GetMyTimeStr()}--------------------------------------------------------------------------------------------";
             await file.WriteLineAsync(strLog);
         }
 

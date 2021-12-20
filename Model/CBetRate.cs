@@ -16,7 +16,7 @@ namespace LSportsServer
         public CBetRate(CGame clsGame)
         {
             m_clsGame = clsGame;
-            m_nStatus = 1;
+            m_nStatus = 0;
         }
 
         public MBase GetModel()
