@@ -152,10 +152,11 @@ namespace LSportsServer
             }
         }
 
-        public static void CalculateMiniResult(int nSpecial)
+        public static void CalculateMiniResult(int nSpecial, int nGNum)
         {
+            string strDate = CMyTime.GetMyTimeStr("yyyy-MM-dd");
             string sql = $"SELECT b.sn as childSn, a.sub_child_sn as subChildSn, b.home_score, b.away_score, b.win_team, b.special, b.game_code FROM tb_total_betting a, tb_child b, tb_subchild c ";
-            sql += $"WHERE a.sub_child_sn = c.sn and c.child_sn = b.sn AND (b.win_team is not null or b.handi_winner is not null) AND a.result = 0 AND a.betid = 0 AND b.special = {nSpecial} GROUP BY a.sub_child_sn ORDER BY c.child_sn ASC";
+            sql += $"WHERE a.sub_child_sn = c.sn and c.child_sn = b.sn AND (b.win_team is not null or b.handi_winner is not null) AND a.result = 0 AND a.betid = 0 AND b.special = {nSpecial} AND b.game_th = '{nGNum}' AND b.gameDate = '{strDate}' GROUP BY a.sub_child_sn ORDER BY c.child_sn ASC";
 
             DataRowCollection listData = CMySql.GetDataQuery(sql);
 

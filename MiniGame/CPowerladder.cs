@@ -174,7 +174,7 @@ namespace LSportsServer
             }
 
             SavePowerLadderResult();
-            CResult.CalculateMiniResult(25);
+            CResult.CalculateMiniResult(25, m_nDNum);
         }
 
         private void UpdateResult(int nChildSn, int nHomeScore, int nAwaySocre)

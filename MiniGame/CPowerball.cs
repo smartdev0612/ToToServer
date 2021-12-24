@@ -472,7 +472,7 @@ namespace LSportsServer
             }
 
             SavePowerBallResult();
-            CResult.CalculateMiniResult(7);
+            CResult.CalculateMiniResult(7, m_nGNum);
         }
 
         private void UpdateResult(int nChildSn, int nHomeScore, int nAwaySocre)
