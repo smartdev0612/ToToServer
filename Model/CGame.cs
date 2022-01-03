@@ -624,7 +624,7 @@ namespace LSportsServer
             }
             else if(nLive == 2)   //traxex
             {
-                clsBetRate = m_lstLiveBetRate.Find(value => value.m_nMarket == nMarketID);
+                clsBetRate = m_lstLiveBetRate.Find(value => value != null && value.m_nMarket == nMarketID);
                 if (clsBetRate == null)
                 {
                     clsBetRate = new CBetRate(this);
@@ -747,8 +747,8 @@ namespace LSportsServer
                 List<CBetRate> lstPrematchBetRate = this.m_lstPrematchBetRate.ToList(); // apollo
                 List<CBetRate> lstLiveBetRate = this.m_lstLiveBetRate.ToList(); // apollo
 
-                if((lstPrematchBetRate.Count > 0 && lstPrematchBetRate.Exists(value=>value.m_nMarket == clsRate.m_nMarket && value.m_nCode > 0))
-                || (lstLiveBetRate.Count > 0 && lstLiveBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket && value.m_nCode > 0)))
+                if((lstPrematchBetRate.Count > 0 && lstPrematchBetRate.Exists(value=>value != null && value.m_nMarket == clsRate.m_nMarket && value.m_nCode > 0))
+                || (lstLiveBetRate.Count > 0 && lstLiveBetRate.Exists(value =>value != null && value.m_nMarket == clsRate.m_nMarket && value.m_nCode > 0)))
                     clsRate.UpdateResult(info);
             }
 

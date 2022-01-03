@@ -192,3 +192,4 @@ D:\project\server\ToToServer\obj\Debug\net5.0\Sports.dll
 D:\project\server\ToToServer\obj\Debug\net5.0\ref\Sports.dll
 D:\project\server\ToToServer\obj\Debug\net5.0\Sports.pdb
 D:\project\server\ToToServer\obj\Debug\net5.0\LSportsServer.genruntimeconfig.cache
+D:\project\server\ToToServer\obj\Debug\net5.0\LSportsServer.csproj.AssemblyReference.cache
