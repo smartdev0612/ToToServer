@@ -133,6 +133,13 @@ namespace LSportsServer
                 return;
             }
 
+            int two_folder_betting = CGlobal.ParseInt(userInfo["two_folder_betting"]);
+            if (two_folder_betting == 0 && betting_cnt == 2)
+            {
+                ReturnPacket(CDefine.PACKET_SPORT_BET, "회원님은 두폴더배팅 불가능합니다.", 1);
+                return;
+            }
+
             //-> 게임번호
             sql = "SELECT MAX(sn) AS last_sn FROM tb_total_cart";
             DataRow maxCart = CMySql.GetDataQuery(sql)[0];
@@ -1055,7 +1062,7 @@ namespace LSportsServer
 
             try
             {
-                lstGame = lstGame.FindAll(value => value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(3) && value.IsFinishGame() == false);
+                lstGame = lstGame.FindAll(value => value.m_strDate != null && value.m_strDate != "" && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(3) && value.IsFinishGame() == false);
             }
             catch (Exception err)
             {

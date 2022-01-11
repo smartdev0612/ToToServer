@@ -123,7 +123,7 @@ namespace LSportsServer
 
         public void SetLiveFlag()
         {
-            if(this.CheckLive() == false)
+            if (this.CheckLive() == false) 
             {
                 this.m_nLive = 2;
                 if (m_bCheck)
@@ -611,7 +611,7 @@ namespace LSportsServer
                 List<CBetRate> lstBetRate = m_lstPrematchBetRate.ToList();
                 if(lstBetRate.Count > 0)
                 {
-                    clsBetRate = lstBetRate.Find(value => value.m_nMarket == nMarketID);
+                    clsBetRate = lstBetRate.Find(value => value != null && value.m_nMarket == nMarketID);
                     if (clsBetRate == null)
                     {
                         clsBetRate = new CBetRate(this);

@@ -555,7 +555,7 @@ namespace LSportsServer
                 {
                     lock (lstGame)
                     {
-                        lstGame.RemoveAll(value => value != null && value.IsFinishGame() && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
+                        lstGame.RemoveAll(value => value != null && value.IsFinishGame() && value.m_strDate != null && value.m_strDate != "" && value.GetGameDateTime() < CMyTime.GetMyTime().AddDays(-1));
                     }
                 }
                 catch (Exception err)
