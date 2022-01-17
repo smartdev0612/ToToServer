@@ -65,8 +65,8 @@ namespace LSportsServer.Controllers
                     CGame clsGame = lstGame[nIndex];
                     if (clsGame == null)
                         break;
-                    clsGame.GetPrematchBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value => value.ChangeAdminRate(1, fRate));
-                    clsGame.GetLiveBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value => value.ChangeAdminRate(2, fRate));
+                    clsGame.GetPrematchBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value => value.ChangeAdminRate(1, fRate, true));
+                    clsGame.GetLiveBetRateList().FindAll(value => value.m_nMarket == packet.nMarket).ForEach(value => value.ChangeAdminRate(2, fRate, true));
                     nIndex++;
                 }
             }

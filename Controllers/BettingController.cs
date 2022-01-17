@@ -25,7 +25,7 @@ namespace LSportsServer.Controllers
                     case 0x02:      //배팅정보 삭제 By Betting no
                         RemoveBettingInfoByBettingNo(strValue);
                         break;
-                    case 0x03:      //선택된 리그들 삭제
+                    case 0x03:      //배팅정보 추가
                         break;
                 }
             }

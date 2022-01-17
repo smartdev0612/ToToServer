@@ -129,7 +129,7 @@ namespace LSportsServer
 
                     JToken objFixture = objBody;
                     long nFixtureID = Convert.ToInt64(objFixture["FixtureId"]);
-                    CGlobal.ShowConsole($"ReceiveMarket {nFixtureID} game! *************************");
+                    //CGlobal.ShowConsole($"ReceiveMarket {nFixtureID} game! *************************");
                     CGame clsGame = CGlobal.GetGameInfoByFixtureID(nFixtureID);
                     if (clsGame == null)
                     {
@@ -316,8 +316,8 @@ namespace LSportsServer
                         // CGlobal.ShowConsole("GameFixture");
                         // CGlobal.WriteFixtureLogAsync(strPacket);
                         GameFixture(objBody, nLive);
-                        //string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
-                        // CGlobal.ShowConsole(strBettingListLog);
+                        string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
+                        CGlobal.ShowConsole(strBettingListLog);
                         break;
                     case 2:
                         // CGlobal.ShowConsole("GameScore");
@@ -670,7 +670,7 @@ namespace LSportsServer
                         if(clsInfo.m_nSpecial != 3)
                         {
                             GetGameInfoFromApi(clsInfo.m_nFixtureID);
-                            CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
+                            //CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
                             Thread.Sleep(1000);
                         }
                     }

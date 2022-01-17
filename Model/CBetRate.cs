@@ -7,9 +7,10 @@ namespace LSportsServer
 {
     public class CBetRate : MBetRate, ILSports
     {
-        public double m_dOrder;             //현시순서를 정렬하기 위한 변수  
+        public double m_dOrder;                             // 현시순서를 정렬하기 위한 변수  
         public CGame m_clsGame;
-        private double[] m_lstTicks = {0, 0, 0};
+        private double[] m_lstTicks = {0, 0, 0};            // 배당업데이트시간 보관. 가장 최근에 변경된 배당만 업데이트.
+        private int[] m_lstSetAdminRate = { 0, 0, 0 };      // 0: 환수률 적용안됨, 1: 적용됨
 
         public int m_nFamily => GetFamily();
 
@@ -200,6 +201,9 @@ namespace LSportsServer
                 }
             }
 
+            // 새로 업데이트된 배당은 환수률 적용안된것으로 설정.
+            this.m_lstSetAdminRate[nIndex] = 0;
+
             if (nLive >= 2)
             {
                 m_clsGame.SetLiveFlag();
@@ -234,7 +238,7 @@ namespace LSportsServer
             
         }
 
-        public void ChangeAdminRate(int nLive, double fRate = 0.0)
+        public void ChangeAdminRate(int nLive, double fRate = 0.0, bool bAdmin = false)
         {
             CMarket clsMarket = CGlobal.GetMarketInfoByCode(m_nMarket);
             if (clsMarket.m_nPeriod < m_clsGame.m_nPeriod && m_nStatus < 2)
@@ -245,11 +249,33 @@ namespace LSportsServer
             if (fRate == 0.0f)
                 fRate = clsMarket.m_fRate;
 
-            m_fHRate = Math.Round(m_fHRate * fRate, 2);
-            m_fDRate = Math.Round(m_fDRate * fRate, 2);
-            m_fARate = Math.Round(m_fARate * fRate, 2);
+            // 관리자에서 환수률 변경하는 경우
+            if (bAdmin)
+            {
+                this.m_lstSetAdminRate[0] = 0;
+                this.m_lstSetAdminRate[1] = 0;
+                this.m_lstSetAdminRate[2] = 0;
+            }
 
-            
+            // 환수률 적용. 이미 적용한 배당은 적용안함.
+            if (this.m_lstSetAdminRate[0] == 0)
+            {
+                m_fHRate = Math.Round(m_fHRate * fRate, 2);
+                this.m_lstSetAdminRate[0] = 1;
+            }
+
+            if (this.m_lstSetAdminRate[1] == 0)
+            {
+                m_fARate = Math.Round(m_fARate * fRate, 2);
+                this.m_lstSetAdminRate[1] = 1;
+            }
+
+            if (this.m_lstSetAdminRate[2] == 0)
+            {
+                m_fDRate = Math.Round(m_fDRate * fRate, 2);
+                this.m_lstSetAdminRate[2] = 1;
+            }
+                        
             if (clsMarket.m_nFamily == 1)
             {
                 if (m_fHRate < 1.0f || m_fDRate < 1.0f || m_fARate < 1.0f)

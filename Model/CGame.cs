@@ -499,7 +499,7 @@ namespace LSportsServer
 
         public void AddPrematchBetRate(CBetRate clsRate)
         {
-            if (m_lstPrematchBetRate.Exists(value => value.m_nMarket == clsRate.m_nMarket) == false)
+            if (m_lstPrematchBetRate.Exists(value => value != null && value.m_nMarket == clsRate.m_nMarket) == false)
                 m_lstPrematchBetRate.Add(clsRate);
         }
 
@@ -538,7 +538,7 @@ namespace LSportsServer
                 if (nLive >= 2)
                 {
                     // this.m_lstLiveBetRate.RemoveAll(value => value.m_strApi != "Bet365");    // traxex
-                    m_lstLiveBetRate.FindAll(value => value.m_strApi != "Bet365").ForEach(value => value.m_nStatus = 2);    // apollo
+                    m_lstLiveBetRate.FindAll(value => value != null && value.m_strApi != "Bet365").ForEach(value => value.m_nStatus = 2);    // apollo
                     if (strApi != "Bet365")
                     {
                         continue;
