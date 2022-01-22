@@ -495,13 +495,7 @@ namespace LSportsServer
                 
                 foreach (DataRow info in list)
                 {
-                    int nChildSn = CGlobal.ParseInt(info["sn"]);
-                    strDeleteChild += $" OR sn = {nChildSn}";
-                    strDeleteSubChild += $" OR child_sn = {nChildSn}";
-
                     long nFixtureID = Convert.ToInt64(info["game_sn"]);
-                    strDeleteScore += $" OR game_sn = {nFixtureID}";
-
                     CGlobal.RemoveGameAtFixtureID(nFixtureID);
                 }
 
