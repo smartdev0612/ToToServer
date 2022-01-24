@@ -141,7 +141,7 @@ namespace LSportsServer
                 }
 
                 //-> 추천인 마일리지는 미니게임 제외, 스포츠 1폴더(이기거나 진거 합 2이상) 이상부터 지급
-                if (nLastPecialCode < 3)
+                if (nLastPecialCode < 5)
                 {
                     if ((nWinCnt + nLoseCnt) > 1)
                     {
@@ -421,7 +421,7 @@ namespace LSportsServer
                 }
 
                 //-> 추천인 마일리지는 미니게임 제외, 스포츠 1폴더(이기거나 진거 합 2이상) 이상부터 지급
-                if (nSpecialCode < 3)
+                if (nSpecialCode < 5)
                 {
                     if ((nWinCount + nLoseCount) > 1)
                     {
