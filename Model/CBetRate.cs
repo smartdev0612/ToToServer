@@ -360,7 +360,7 @@ namespace LSportsServer
 
                 if (m_clsGame.m_nSports == 48242) // 농구
                 {
-                    if (m_fHRate < 1.3f || m_fARate < 1.3f)
+                    if (m_fHRate < 1.6f || m_fARate < 1.6f)
                     {
                         m_nStatus = m_nStatus >= 2 ? m_nStatus : 2;
                     }
