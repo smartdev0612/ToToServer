@@ -316,6 +316,9 @@ namespace LSportsServer
                         // CGlobal.ShowConsole("GameFixture");
                         // CGlobal.WriteFixtureLogAsync(strPacket);
                         GameFixture(objBody, nLive);
+                        string strGameListLog = $"******** Game List => " + Convert.ToString(CGlobal.GetGameListCount() + " *********");
+                        CGlobal.ShowConsole(strGameListLog);
+
                         string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
                         CGlobal.ShowConsole(strBettingListLog);
                         break;
@@ -479,6 +482,34 @@ namespace LSportsServer
                     clsGame.UpdateResult(objMarket, nLive);
                 }
             }
+        }
+
+        // 현재시간으로부터 3일이내의 경기들만 가져옴.
+        private static List<long> GetAvailableFixtures()
+        {
+            List<long> lstFixtureID = new List<long>();
+            int nFromDate = (Int32)(DateTime.Now.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+            int nToDate = nFromDate + 3 * 24 * 3600;
+            string strReq = $"http://{CDefine.LSPORTS_ADDRESS}:{CDefine.LSPORTS_HTTP_PORT}/api/fixtures?nFromDate={nFromDate}&nToDate={nToDate}";
+            string strPacket = CHttp.GetResponseString(strReq);
+            if (string.IsNullOrEmpty(strPacket) == false)
+            {
+                JObject objPacket = JObject.Parse(strPacket);
+                List<JToken> lstFixtures = objPacket["Body"].ToList();
+                if (lstFixtures.Count > 0)
+                {
+                    foreach (JToken objFixture in lstFixtures)
+                    {
+                        long nFixtureID = CGlobal.ParseInt64(objFixture["FixtureId"]);
+                        if (lstFixtureID.Exists(value => value == nFixtureID) != true)
+                            lstFixtureID.Add(nFixtureID);
+                    }
+
+                }
+            }
+                
+            
+            return lstFixtureID;
         }
 
         private static void StartCheckFinished()
@@ -659,19 +690,26 @@ namespace LSportsServer
             {
                 try
                 {
-                    List<CGame> lstGame = CGlobal.GetGameList();
-                    lstGame = lstGame.FindAll(value => value != null && value.CheckMarket() == false).ToList();
-
-                    foreach (CGame clsInfo in lstGame)
+                    List<long> lstFixtureID = GetAvailableFixtures();
+                    if(lstFixtureID.Count > 0)
                     {
-                        if (clsInfo == null)
-                            continue;
+                        List<CGame> lstGame = CGlobal.GetGameList();
+                        lstGame = lstGame.FindAll(value => value != null && value.CheckMarket() == false).ToList();
 
-                        if(clsInfo.m_nSpecial != 3)
+                        foreach (CGame clsInfo in lstGame)
                         {
-                            GetGameInfoFromApi(clsInfo.m_nFixtureID);
-                            //CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
-                            Thread.Sleep(1000);
+                            if (clsInfo == null)
+                                continue;
+
+                            if (clsInfo.m_nSpecial != 3)
+                            {
+                                if(lstFixtureID.Exists(value => value == clsInfo.m_nFixtureID) == true)
+                                {
+                                    GetGameInfoFromApi(clsInfo.m_nFixtureID);
+                                    //CGlobal.ShowConsole($"CheckMarket {clsInfo.m_nFixtureID} game! *************************");
+                                    Thread.Sleep(1000);
+                                }
+                            }
                         }
                     }
                 }

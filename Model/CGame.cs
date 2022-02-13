@@ -467,7 +467,7 @@ namespace LSportsServer
                     {
                         UpdateBetRate(objMarket, nLive, lstStrApi);
                         //lock(this.m_lstLiveBetRate)
-                        this.m_lstLiveBetRate.FindAll(value => value.m_nMarket == nMarketID && lstStrApi.Exists(val => val == value.m_strApi) == false).ForEach(value => value.m_nStatus = 2);
+                        this.m_lstLiveBetRate.FindAll(value => value.m_nMarket == nMarketID && lstStrApi.Exists(val => val != null && val == value.m_strApi) == false).ForEach(value => value.m_nStatus = 2);
                     }
                     else
                     {

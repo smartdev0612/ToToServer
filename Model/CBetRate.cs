@@ -439,6 +439,22 @@ namespace LSportsServer
                 return;
             } */
 
+            object objResult = new object();
+            List<string> lstResult = new List<string>();
+
+            Console.WriteLine(info.m_strBetID + " --- ");
+
+            lock (objResult)
+            {
+                string betid = lstResult.Find(value => value == info.m_strBetID);
+                if (betid != null)
+                    return;
+
+                lstResult.Add(info.m_strBetID);
+            }
+
+            Console.Write(info.m_strBetID);
+
             List<CBetting> lstBetting = new List<CBetting>();
             lstBetting = CGlobal.GetSportsApiBettingByBetID(info.m_strBetID);
             if(lstBetting.Count > 0)
@@ -473,6 +489,10 @@ namespace LSportsServer
                 }
             }
 
+            lock (objResult)
+            {
+                lstResult.Remove(info.m_strBetID);
+            }
         }
 
         public void InsertBetRateToDB()

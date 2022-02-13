@@ -266,6 +266,11 @@ namespace LSportsServer
             return _lstGame;
         }
 
+        public static int GetGameListCount()
+        {
+            return _lstGame.Count;
+        }
+
         public static List<CBetting> GetSportsApiBettingList()
         {
             return _lstApiBetting;

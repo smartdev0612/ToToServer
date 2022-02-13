@@ -28,7 +28,7 @@ namespace LSportsServer
         {
             int nSn = 0;
 
-            CGlobal.ShowConsole(sql);
+            // CGlobal.ShowConsole(sql);
             using (MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString()))
             {
                 mysqlCon.Open();
@@ -50,7 +50,7 @@ namespace LSportsServer
 
                 foreach(string sql in lstSql)
                 {
-                    CGlobal.ShowConsole(sql);
+                    // CGlobal.ShowConsole(sql);
                     MySqlCommand command = new MySqlCommand(sql, mysqlCon);
                     command.ExecuteNonQuery();
 
@@ -87,7 +87,7 @@ namespace LSportsServer
 
                 try
                 {
-                    CGlobal.ShowConsole(strQuery);
+                    // CGlobal.ShowConsole(strQuery);
 
                     new MySqlCommand(strQuery, mysqlCon).ExecuteNonQuery();
                 }
@@ -117,7 +117,7 @@ namespace LSportsServer
 
         public static DataRowCollection GetDataQuery(string sql)
         {
-            CGlobal.ShowConsole(sql);
+            // CGlobal.ShowConsole(sql);
             try
             {
                 using (MySqlConnection mysqlCon = new MySqlConnection(GetDBConnectString()))
