@@ -125,6 +125,9 @@ namespace LSportsServer
             LoadRealtimeGameFromDB();
 
             CEngine.ClearDBThread();
+
+            Task.Factory.StartNew(() => CLSports.LoadAvailableFixtures());
+
             new Thread(() => CLSports.LoadGameInfoToDB()).Start();
         }
 

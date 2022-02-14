@@ -519,7 +519,7 @@ namespace LSportsServer
             sql = $"DELETE FROM tb_subchild WHERE child_sn IN (SELECT sn FROM tb_child WHERE gameDate < '{strPreBettingDate}')";
             lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_child WHERE gameDate < '{strPreBettingDate}'";
+            sql = $"DELETE FROM tb_child WHERE gameDate < '{strPreBettingDate}' OR (CONCAT(tb_child.gameDate, ' ', tb_child.gameHour, ':', tb_child.gameTime) <= '{strNowTime} 00:00' AND special < 5 AND sn NOT IN (SELECT child_sn FROM tb_subchild))";
             lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_total_betting WHERE tb_total_betting.betting_no IN (SELECT tb_total_cart.betting_no FROM tb_total_cart WHERE tb_total_cart.bet_date < '{strPreBettingDate} 00:00:00')";

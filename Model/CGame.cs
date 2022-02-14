@@ -236,37 +236,29 @@ namespace LSportsServer
             }
         }
 
-        public void UpdateInfo(JToken objInfo)
+        public bool UpdateInfo(JToken objInfo)
         {
             objInfo = objInfo["Fixture"];
             m_nSports = CGlobal.ParseInt(objInfo.SelectToken("Sport").SelectToken("Id"));
             CSports clsSports = CGlobal.GetSportsInfoByCode(m_nSports);
             if (clsSports == null || clsSports.m_nUse == 0)
-            {
-                CGlobal.RemoveGame(this);
-                return;
-            }
+                return false;
+
             m_nLeague = CGlobal.ParseInt(objInfo.SelectToken("League").SelectToken("Id"));
             CLeague clsLeague = CGlobal.GetLeagueInfoByCode(m_nLeague);
             if (clsLeague == null || clsLeague.m_nUse == 0)
-            {
-                CGlobal.RemoveGame(this);
-                return;
-            }
+                return false;
 
             CCountry clsCountry = CGlobal.GetCountryInfoByCode(clsLeague.m_nCountry);
             if (clsCountry == null || clsCountry.m_nUse == 0)
-            {
-                CGlobal.RemoveGame(this);
-                return;
-            }
+                return false;
+
             m_nCountry = clsCountry.m_nCode;
 
             List<JToken> lstParticipant = objInfo["Participants"].ToList();
             if (lstParticipant.Count != 2)
-            {
-                return;
-            }
+                return false;
+
             if (CGlobal.ParseInt(lstParticipant[0]["Position"]) == 1)
             {
                 m_nHomeTeam = CGlobal.ParseInt(lstParticipant[0]["Id"]);
@@ -280,16 +272,10 @@ namespace LSportsServer
 
             CTeam clsHomeTeam = CGlobal.GetTeamInfoByCode(m_nHomeTeam);
             if(clsHomeTeam == null)
-            {
-                CGlobal.RemoveGame(this);
-                return;
-            }
+                return false;
+
             CTeam clsAwayTeam = CGlobal.GetTeamInfoByCode(m_nAwayTeam);
-            if (clsAwayTeam == null)
-            {
-                CGlobal.RemoveGame(this);
-                return;
-            }
+                return false;
 
 
             DateTime dateTime = CMyTime.ConvertStrToTime(Convert.ToString(objInfo["StartDate"]));
@@ -333,6 +319,8 @@ namespace LSportsServer
                 m_bCheck = true;
 
             CheckFinishGame();
+
+            return true;
         }
         
         public bool CheckLiveGame()
