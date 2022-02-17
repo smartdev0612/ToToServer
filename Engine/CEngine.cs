@@ -507,6 +507,18 @@ namespace LSportsServer
                 lstSql.Clear();
             }
 
+            sql = $"SELECT * FROM tb_child WHERE gameDate < '{strPreBettingDate}' OR (CONCAT(tb_child.gameDate, ' ', tb_child.gameHour, ':', tb_child.gameTime) <= '{strNowTime} 00:00' AND special < 5 AND sn NOT IN (SELECT child_sn FROM tb_subchild))";
+            list = CMySql.GetDataQuery(sql);
+
+            if (list.Count > 0)
+            {
+                foreach (DataRow info in list)
+                {
+                    long nFixtureID = Convert.ToInt64(info["game_sn"]);
+                    CGlobal.RemoveGameAtFixtureID(nFixtureID);
+                }
+            }
+
             sql = $"DELETE FROM tb_kenosadari_result WHERE gameDate < '{strPreDate}'";
             lstSql.Add(sql);
 

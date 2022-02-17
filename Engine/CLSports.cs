@@ -70,8 +70,8 @@ namespace LSportsServer
 
             m_wsSchedule.Connect();
 
-
             new Thread(() => StartCheckFinished()).Start();
+            new Thread(() => StartCheckLive()).Start();
         }
 
         private static void Socket_OnClose(object sender, CloseEventArgs e)
@@ -294,6 +294,12 @@ namespace LSportsServer
                     case 1:
                         // CGlobal.ShowConsole("GameFixture");
                         // CGlobal.WriteFixtureLogAsync(strPacket);
+                        string strGameListLog = $"******** Game List => " + Convert.ToString(CGlobal.GetGameListCount() + " *********");
+                        CGlobal.ShowConsole(strGameListLog);
+
+                        string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
+                        CGlobal.ShowConsole(strBettingListLog);
+
                         GameFixture(objBody, nLive);
                         break;
                     case 2:
@@ -304,11 +310,7 @@ namespace LSportsServer
                     case 3:
                         // CGlobal.ShowConsole("GameMarket");
                         GameMarket(objBody, nLive);
-                        string strGameListLog = $"******** Game List => " + Convert.ToString(CGlobal.GetGameListCount() + " *********");
-                        CGlobal.ShowConsole(strGameListLog);
-
-                        string strBettingListLog = $"******** Betting List => " + Convert.ToString(CGlobal.GetSportsApiBettingListCount() + " *********");
-                        CGlobal.ShowConsole(strBettingListLog);
+                        
                         //if(nLive == CDefine.LSPORTS_INPLAY)
                         //    _ = CGlobal.WriteMarketLogAsync(strPacket);
                         break;
@@ -506,13 +508,22 @@ namespace LSportsServer
                     }
                 }
 
+                Thread.Sleep(10 * 1000);
+            }
+        }
+
+        private static void StartCheckLive()
+        {
+            while(true)
+            {
                 List<CGame> lstGame = CGlobal.GetGameList();
                 lstGame = lstGame.FindAll(value => value != null && value.m_nStatus >= 2).ToList();
-                foreach(CGame clsGame in lstGame)
+                foreach (CGame clsGame in lstGame)
                 {
-                    if(clsGame.m_nSpecial != 3)
+                    if (clsGame.m_nSpecial != 3)
                     {
                         GetGameInfoFromApi(clsGame.m_nFixtureID);
+                        Thread.Sleep(1000);
                     }
                 }
 
@@ -527,9 +538,6 @@ namespace LSportsServer
                 {
                     CGlobal.ShowConsole(err.Message);
                 }
-
-
-                Thread.Sleep(10 * 1000);
             }
         }
 

@@ -275,6 +275,7 @@ namespace LSportsServer
                 return false;
 
             CTeam clsAwayTeam = CGlobal.GetTeamInfoByCode(m_nAwayTeam);
+            if (clsAwayTeam == null)
                 return false;
 
 
