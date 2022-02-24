@@ -66,7 +66,7 @@ namespace LSportsServer
 
         public static DataRowCollection SelectSportsBetting()
         {
-            string sql = "SELECT * FROM tb_total_betting WHERE betid != '' AND result = 0";
+            string sql = "SELECT * FROM tb_game_betting WHERE betid != '' AND result = 0";
             DataRowCollection list = CMySql.GetDataQuery(sql);
 
             return list;
@@ -106,7 +106,7 @@ namespace LSportsServer
             } 
             else
             {
-                sql = $"INSERT INTO tb_child(game_sn, sport_id, sport_name_en, sport_name, league_sn, notice_en, notice, home_team_id, home_team_en, home_team, away_team_id, away_team_en, away_team, gameDate, gameHour, gameTime, status, kubun, strTime, special, league_img, home_score, away_score, win_team, game_period, is_specified_special, tb_child.type) VALUES({model.m_nFixtureID}, {model.m_nSports}, '{clsSports.m_strEn}', '{clsSports.m_strKo}', {clsLeague.m_nCode}, '{clsLeague.m_strEn}', '{clsLeague.m_strKo}', {model.m_nHomeTeam}, '{clsHomeTeam.m_strEn}', '{clsHomeTeam.m_strKo}', {model.m_nAwayTeam}, '{clsAwayTeam.m_strEn}', '{clsAwayTeam.m_strKo}', '{model.m_strDate}', '{model.m_strHour}', '{model.m_strMin}', {model.m_nStatus}, {nKubun}, '{CMyTime.GetMyTimeStr()}', {model.m_nSpecial}, '{clsLeague.m_strImg}', {model.m_nHomeScore}, {model.m_nAwayScore}, '{model.m_strWinTeam}', {model.m_nPeriod}, {model.m_nSpecified}, {model.m_nType})";
+                sql = $"INSERT INTO tb_child(game_sn, sport_id, sport_name_en, sport_name, league_sn, notice_en, notice, home_team_id, home_team_en, home_team, away_team_id, away_team_en, away_team, gameDate, gameHour, gameTime, status, kubun, strTime, special, league_img, home_score, away_score, win_team, game_period, is_specified_special, tb_child.type) VALUES({model.m_nFixtureID}, {model.m_nSports}, '{clsSports.m_strEn.Replace('\'', ' ')}', '{clsSports.m_strKo.Replace('\'', ' ')}', {clsLeague.m_nCode}, '{clsLeague.m_strEn.Replace('\'', ' ')}', '{clsLeague.m_strKo.Replace('\'', ' ')}', {model.m_nHomeTeam}, '{clsHomeTeam.m_strEn.Replace('\'', ' ')}', '{clsHomeTeam.m_strKo.Replace('\'', ' ')}', {model.m_nAwayTeam}, '{clsAwayTeam.m_strEn.Replace('\'', ' ')}', '{clsAwayTeam.m_strKo.Replace('\'', ' ')}', '{model.m_strDate}', '{model.m_strHour}', '{model.m_strMin}', {model.m_nStatus}, {nKubun}, '{CMyTime.GetMyTimeStr()}', {model.m_nSpecial}, '{clsLeague.m_strImg}', {model.m_nHomeScore}, {model.m_nAwayScore}, '{model.m_strWinTeam}', {model.m_nPeriod}, {model.m_nSpecified}, {model.m_nType})";
 
                 nChildSn = CMySql.ExcuteQuery(sql);
 

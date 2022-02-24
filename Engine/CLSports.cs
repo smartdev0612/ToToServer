@@ -452,7 +452,7 @@ namespace LSportsServer
         {
             while(true)
             {
-                string sql = "SELECT tbl_temp.* FROM (SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_child.special, tb_subchild.* FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result = 0 AND tb_total_betting.betid <> '' UNION SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_child.special, tb_subchild.* FROM tb_subchild LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_subchild.status < 3 AND tb_child.special < 5) tbl_temp WHERE tbl_temp.game_sn IS NOT NULL GROUP BY tbl_temp.sn";
+                string sql = "SELECT tbl_temp.* FROM (SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_child.special, tb_subchild.* FROM tb_game_betting LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_game_betting.result = 0 AND tb_game_betting.betid <> '' UNION SELECT tb_child.sn AS childSn, tb_child.live AS childLive, tb_child.game_sn, tb_child.special, tb_subchild.* FROM tb_subchild LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_subchild.status < 3 AND tb_child.special < 5) tbl_temp WHERE tbl_temp.game_sn IS NOT NULL GROUP BY tbl_temp.sn";
                 DataRowCollection list = CMySql.GetDataQuery(sql);
 
                 long nOldFixtureId = 0;

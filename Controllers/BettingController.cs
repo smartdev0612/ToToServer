@@ -25,7 +25,8 @@ namespace LSportsServer.Controllers
                     case 0x02:      //배팅정보 삭제 By Betting no
                         RemoveBettingInfoByBettingNo(strValue);
                         break;
-                    case 0x03:      //배팅정보 추가
+                    case 0x03:      //배팅방향 수정
+                        ChangeBettingSelectNo(strValue);
                         break;
                 }
             }
@@ -59,6 +60,18 @@ namespace LSportsServer.Controllers
                 {
                     CGlobal.RemoveSportsApiBetting(clsBetting);
                 }
+            }
+        }
+
+        public void ChangeBettingSelectNo(string strValue)
+        {
+            JToken param = JObject.Parse(strValue);
+            int nSn = CGlobal.ParseInt(param["sn"]);
+            int nSelectNo = CGlobal.ParseInt(param["select_no"]);
+            CBetting clsBetting = CGlobal.GetSportsApiBettingBySn(nSn);
+            if (clsBetting != null)
+            {
+                clsBetting.m_nSelectNo = nSelectNo;
             }
         }
     }

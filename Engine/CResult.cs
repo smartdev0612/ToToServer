@@ -11,8 +11,8 @@ namespace LSportsServer
         public static void CalculateSportResult(int nSn)
         {
             //베팅테이블에서 해당 베팅자료를 얻어온다.
-            //string sql = $"SELECT tb_total_betting.* FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn WHERE tb_subchild.child_sn = {clsGame.m_nCode}";
-            string sql = $"SELECT tb_total_betting.* FROM tb_total_betting WHERE sn = {nSn}";
+            //string sql = $"SELECT tb_game_betting.* FROM tb_game_betting LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn WHERE tb_subchild.child_sn = {clsGame.m_nCode}";
+            string sql = $"SELECT tb_game_betting.* FROM tb_game_betting WHERE sn = {nSn}";
             DataRowCollection list = CMySql.GetDataQuery(sql);
             foreach (DataRow betInfo in list)
             {
@@ -24,7 +24,16 @@ namespace LSportsServer
                 double fWinRate = 1.0;
 
                 string betting_no = Convert.ToString(betInfo["betting_no"]);
-                sql = $"SELECT * FROM tb_total_betting WHERE betting_no = '{betting_no}' AND pass = 0";
+
+                sql = $"SELECT * FROM tb_game_cart WHERE betting_no = '{betting_no}'";
+                DataRowCollection lstTotalCart = CMySql.GetDataQuery(sql);
+                if (lstTotalCart.Count == 0)
+                    continue;
+
+                if (CGlobal.ParseInt(lstTotalCart[0]["result"]) > 0)
+                    continue;
+
+                sql = $"SELECT * FROM tb_game_betting WHERE betting_no = '{betting_no}' AND pass = 0";
                 DataRowCollection lstBet = CMySql.GetDataQuery(sql);
                 if (lstBet == null || lstBet.Count == 0)
                 {
@@ -60,11 +69,11 @@ namespace LSportsServer
                     continue;
                 }
 
-                sql = $"UPDATE tb_total_betting SET pass = 1 WHERE betting_no = '{betting_no}'";
+                sql = $"UPDATE tb_game_betting SET pass = 1 WHERE betting_no = '{betting_no}'";
                 CMySql.ExcuteQuery(sql);
 
                 int member_sn = CGlobal.ParseInt(betInfo["member_sn"]);
-                sql = $"SELECT * FROM tb_member WHERE sn = {member_sn}";
+                sql = $"SELECT * FROM tb_people WHERE sn = {member_sn}";
                 DataRowCollection lstMember = CMySql.GetDataQuery(sql);
                 if (lstMember.Count == 0)
                 {
@@ -72,13 +81,6 @@ namespace LSportsServer
                 }
                 DataRow memberInfo = lstMember[0];
 
-
-                sql = $"SELECT * FROM tb_total_cart WHERE betting_no = '{betting_no}'";
-                DataRowCollection lstTotalCart = CMySql.GetDataQuery(sql);
-                if (lstTotalCart.Count == 0)
-                {
-                    continue;
-                }
                 int nLastPecialCode = CGlobal.ParseInt(lstTotalCart[0]["last_special_code"]);
 
                 string strUserID = Convert.ToString(memberInfo["uid"]);
@@ -92,7 +94,7 @@ namespace LSportsServer
                 if (nTotalCnt == nCancelCnt)
                 {
                     nWinCash = CGlobal.ParseInt(betMoney * fWinRate);
-                    sql = $"UPDATE tb_total_cart SET result = 4, operdate = now(), result_money = {nWinCash} WHERE logo = '{logo}' AND betting_no = '{betting_no}'";
+                    sql = $"UPDATE tb_game_cart SET result = 4, operdate = now(), result_money = {nWinCash} WHERE logo = '{logo}' AND betting_no = '{betting_no}'";
                     CMySql.ExcuteQuery(sql);
 
                     sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinCash}, 1, now())";
@@ -103,7 +105,7 @@ namespace LSportsServer
                 //낙첨
                 else if (nLoseCnt > 0)
                 {
-                    sql = $"UPDATE tb_total_cart SET result = 2, operdate = now() WHERE betting_no = '{betting_no}'";
+                    sql = $"UPDATE tb_game_cart SET result = 2, operdate = now() WHERE betting_no = '{betting_no}'";
                     CMySql.ExcuteQuery(sql);
 
                     //-> 배팅자 낙첨 마일리지는 미니게임은 제외, 스포츠 1폴더(이기거나 진거 합 2이상) 이상부터 지급
@@ -119,7 +121,7 @@ namespace LSportsServer
                 else if (nWinCnt + nCancelCnt >= nTotalCnt)
                 {
                     nWinCash = CGlobal.ParseInt(betMoney * fWinRate);
-                    sql = $"UPDATE tb_total_cart SET result = 1, operdate = now(), result_money = {nWinCash} WHERE logo = '{logo}' AND betting_no = '{betting_no}'";
+                    sql = $"UPDATE tb_game_cart SET result = 1, operdate = now(), result_money = {nWinCash} WHERE logo = '{logo}' AND betting_no = '{betting_no}'";
                     CMySql.ExcuteQuery(sql);
 
                     sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinCash}, 1, now())";
@@ -155,7 +157,7 @@ namespace LSportsServer
         public static void CalculateMiniResult(int nSpecial, int nGNum)
         {
             string strDate = CMyTime.GetMyTimeStr("yyyy-MM-dd");
-            string sql = $"SELECT b.sn as childSn, a.sub_child_sn as subChildSn, b.home_score, b.away_score, b.win_team, b.special, b.game_code FROM tb_total_betting a, tb_child b, tb_subchild c ";
+            string sql = $"SELECT b.sn as childSn, a.sub_child_sn as subChildSn, b.home_score, b.away_score, b.win_team, b.special, b.game_code FROM tb_game_betting a, tb_child b, tb_subchild c ";
             sql += $"WHERE a.sub_child_sn = c.sn and c.child_sn = b.sn AND (b.win_team is not null or b.handi_winner is not null) AND a.result = 0 AND a.betid = 0 AND b.special = {nSpecial} AND b.game_th = '{nGNum}' AND b.gameDate = '{strDate}' GROUP BY a.sub_child_sn ORDER BY c.child_sn ASC";
 
             DataRowCollection listData = CMySql.GetDataQuery(sql);
@@ -175,7 +177,7 @@ namespace LSportsServer
                 int nAwayScore = CGlobal.ParseInt(row["away_score"]);
                 string strGameCode = Convert.ToString(row["game_code"]);
 
-                sql = $"SELECT sn, member_sn, betting_no, select_no, game_type, home_rate, away_rate, draw_rate FROM tb_total_betting WHERE sub_child_sn = {nSubChildSn}";
+                sql = $"SELECT sn, member_sn, betting_no, select_no, game_type, home_rate, away_rate, draw_rate FROM tb_game_betting WHERE sub_child_sn = {nSubChildSn}";
                 DataRowCollection list = CMySql.GetDataQuery(sql);
                 foreach (DataRow res in list)
                 {
@@ -264,7 +266,7 @@ namespace LSportsServer
                     }
 
                     //-> 배팅내역에 결과 입력
-                    sql = $"UPDATE tb_total_betting SET result= {nResult} WHERE sn = {nBetSn}";
+                    sql = $"UPDATE tb_game_betting SET result= {nResult} WHERE sn = {nBetSn}";
                     CMySql.ExcuteQuery(sql);
                 }
 
@@ -295,7 +297,7 @@ namespace LSportsServer
             sql = $"UPDATE tb_child SET kubun = 1 WHERE sn = {nChildSn}";
             CMySql.ExcuteQuery(sql);
 
-            sql = $"SELECT b.betting_no, b.member_sn, d.last_special_code FROM tb_subchild a, tb_total_betting b, tb_child c, tb_total_cart d WHERE a.sn = b.sub_child_sn AND a.child_sn = c.sn AND b.betting_no = d.betting_no AND d.result = 0 and a.child_sn = {nChildSn}";
+            sql = $"SELECT b.betting_no, b.member_sn, d.last_special_code FROM tb_subchild a, tb_game_betting b, tb_child c, tb_game_cart d WHERE a.sn = b.sub_child_sn AND a.child_sn = c.sn AND b.betting_no = d.betting_no AND d.result = 0 and a.child_sn = {nChildSn}";
             DataRowCollection list = CMySql.GetDataQuery(sql);
             foreach (DataRow info in list)
             {
@@ -303,7 +305,7 @@ namespace LSportsServer
                 int nMemberSn = CGlobal.ParseInt(info["member_sn"]);
                 int nSpecialCode = CGlobal.ParseInt(info["last_special_code"]);
 
-                sql = $"SELECT a.*, c.home_team FROM tb_total_betting a, tb_subchild b,tb_child c WHERE a.betting_no = '{strBettingNo}' AND a.sub_child_sn = b.sn AND b.child_sn = c.sn ORDER BY a.sn";
+                sql = $"SELECT a.*, c.home_team FROM tb_game_betting a, tb_subchild b,tb_child c WHERE a.betting_no = '{strBettingNo}' AND a.sub_child_sn = b.sn AND b.child_sn = c.sn ORDER BY a.sn";
                 DataRowCollection lstBet = CMySql.GetDataQuery(sql);
                 int nWinCount = 0, nLoseCount = 0, nCancelCount = 0, nIngCount = 0;
                 double fWinRate = 1.00;
@@ -320,14 +322,14 @@ namespace LSportsServer
                     {
                         if (nLoseCount > 0)
                         {
-                            sql = $"UPDATE tb_total_betting SET result = 2 WHERE sn = {nBetSn}";
+                            sql = $"UPDATE tb_game_betting SET result = 2 WHERE sn = {nBetSn}";
                             CMySql.ExcuteQuery(sql);
                         }
                         else if (nIngCount == 0)
                         {
                             nWinCount++;
                             fWinRate *= fSelectRate;
-                            sql = $"UPDATE tb_total_betting SET result = 1 WHERE sn = {nBetSn}";
+                            sql = $"UPDATE tb_game_betting SET result = 1 WHERE sn = {nBetSn}";
                             CMySql.ExcuteQuery(sql);
                         }
                     }
@@ -362,7 +364,7 @@ namespace LSportsServer
 
                 //-> 모든게임종료 (정산)
                 int nWinMoney = 0;
-                sql = $"SELECT * FROM tb_member WHERE sn = {nMemberSn}";
+                sql = $"SELECT * FROM tb_people WHERE sn = {nMemberSn}";
                 DataRow memberInfo = CMySql.GetDataQuery(sql)[0];
                 string strLogo = Convert.ToString(memberInfo["logo"]);
                 string strUserID = Convert.ToString(memberInfo["uid"]);
@@ -372,7 +374,7 @@ namespace LSportsServer
                 {
                     //-> 모두 취소된 게임
                     nWinMoney = CGlobal.ParseInt(nBetMoney * fWinRate);
-                    sql = $"UPDATE tb_total_cart SET result = 4, operdate = now(), result_money = {nWinMoney} WHERE logo = '{strLogo}' AND betting_no = '{strBettingNo}'";
+                    sql = $"UPDATE tb_game_cart SET result = 4, operdate = now(), result_money = {nWinMoney} WHERE logo = '{strLogo}' AND betting_no = '{strBettingNo}'";
                     CMySql.ExcuteQuery(sql);
 
                     sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinMoney}, 2, now())";
@@ -383,7 +385,7 @@ namespace LSportsServer
                 else if (nLoseCount > 0)
                 {
                     //낙첨
-                    sql = $"UPDATE tb_total_cart SET result = 2, operdate = now() WHERE betting_no = '{strBettingNo}'";
+                    sql = $"UPDATE tb_game_cart SET result = 2, operdate = now() WHERE betting_no = '{strBettingNo}'";
                     CMySql.ExcuteQuery(sql);
                     //-> 배팅자 낙첨 마일리지는 미니게임은 제외, 스포츠 1폴더(이기거나 진거 합 2이상) 이상부터 지급
                     if (nSpecialCode < 5)
@@ -398,7 +400,7 @@ namespace LSportsServer
                 {
                     //당첨
                     nWinMoney = CGlobal.ParseInt(nBetMoney * fWinRate);
-                    sql = $"UPDATE tb_total_cart SET result = 1, operdate = now(), result_money = {nWinMoney} WHERE logo = '{strLogo}' AND betting_no = '{strBettingNo}'";
+                    sql = $"UPDATE tb_game_cart SET result = 1, operdate = now(), result_money = {nWinMoney} WHERE logo = '{strLogo}' AND betting_no = '{strBettingNo}'";
                     CMySql.ExcuteQuery(sql);
 
                     sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nWinCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {nWinMoney}, 2, now())";
@@ -442,7 +444,7 @@ namespace LSportsServer
 
             lock (CGlobal._objLock)
             {
-                sql = $"SELECT g_money, mem_status FROM tb_member WHERE sn = {nSn}";
+                sql = $"SELECT g_money, mem_status FROM tb_people WHERE sn = {nSn}";
                 DataRowCollection lstMemberGmoney = CMySql.GetDataQuery(sql);
                 if (lstMemberGmoney.Count == 0)
                 {
@@ -452,7 +454,7 @@ namespace LSportsServer
                 nBefore = CGlobal.ParseInt(memberGmoneyInfo["g_money"]);
                 nAfter = nBefore + nAmount;
 
-                sql = $"UPDATE tb_member SET g_money = {nAfter} WHERE sn = {nSn}";
+                sql = $"UPDATE tb_people SET g_money = {nAfter} WHERE sn = {nSn}";
                 CMySql.ExcuteQuery(sql);
             }
 
@@ -475,7 +477,7 @@ namespace LSportsServer
 
         public static void modifyMileageProcess(int sn, int amount, int type, string bettingNo, double rate = 0, int winCount = 0, string addMsg = "")
         {
-            string sql = $"SELECT point, mem_lev, mem_status FROM tb_member WHERE sn = {sn}";
+            string sql = $"SELECT point, mem_lev, mem_status FROM tb_people WHERE sn = {sn}";
             DataRowCollection lstMember = CMySql.GetDataQuery(sql);
             if (lstMember.Count == 0)
             {
@@ -513,7 +515,7 @@ namespace LSportsServer
 
             int before = CGlobal.ParseInt(memberInfo["point"]);
             int after = before + amount;
-            sql = $"UPDATE tb_member SET point = {after} WHERE sn = {sn}";
+            sql = $"UPDATE tb_people SET point = {after} WHERE sn = {sn}";
             CMySql.ExcuteQuery(sql);
 
             if (Convert.ToString(memberInfo["mem_status"]) == "N")
@@ -541,7 +543,7 @@ namespace LSportsServer
             //-> 1대 추천인 처리.
             if (recommend_sn > 0)
             {
-                sql = $"SELECT mem_lev FROM tb_member WHERE mem_status = 'N' AND sn = {recommend_sn}";
+                sql = $"SELECT mem_lev FROM tb_people WHERE mem_status = 'N' AND sn = {recommend_sn}";
                 DataRowCollection lstMember = CMySql.GetDataQuery(sql);
                 if (lstMember != null && lstMember.Count > 0)
                 {
@@ -579,7 +581,7 @@ namespace LSportsServer
             //-> 2대 추천인 처리.
             if (recommend2_sn > 0)
             {
-                sql = $"SELECT mem_lev FROM tb_member WHERE mem_status = 'N' AND sn = {recommend2_sn}";
+                sql = $"SELECT mem_lev FROM tb_people WHERE mem_status = 'N' AND sn = {recommend2_sn}";
                 DataRowCollection lstmemberInfo2 = CMySql.GetDataQuery(sql);
                 if (lstmemberInfo2 != null && lstmemberInfo2.Count > 0)
                 {

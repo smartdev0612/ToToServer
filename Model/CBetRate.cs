@@ -432,7 +432,7 @@ namespace LSportsServer
             }*/
 
             //베팅테이블에서 해당 베팅자료를 얻어온다.
-            /* string sql = $"SELECT tb_total_betting.* FROM tb_total_betting WHERE tb_total_betting.betid = '{info.m_strBetID}' AND result = 0";
+            /* string sql = $"SELECT tb_game_betting.* FROM tb_game_betting WHERE tb_game_betting.betid = '{info.m_strBetID}' AND result = 0";
             DataRowCollection list = CMySql.GetDataQuery(sql);
             if (list.Count == 0)
             {
@@ -453,7 +453,7 @@ namespace LSportsServer
                 lstResult.Add(info.m_strBetID);
             }
 
-            Console.Write(info.m_strBetID);
+            Console.WriteLine(" --- " + info.m_strBetID);
 
             List<CBetting> lstBetting = new List<CBetting>();
             lstBetting = CGlobal.GetSportsApiBettingByBetID(info.m_strBetID);
@@ -477,7 +477,7 @@ namespace LSportsServer
                         nBetResult = 4;
                     }
                     int nSn = CGlobal.ParseInt(clsBetting.m_nCode);
-                    string sql = $"UPDATE tb_total_betting SET result = {nBetResult} WHERE sn = {nSn}";
+                    string sql = $"UPDATE tb_game_betting SET result = {nBetResult} WHERE sn = {nSn}";
                     CMySql.ExcuteQuery(sql);
 
                     if (nBetResult > 0)

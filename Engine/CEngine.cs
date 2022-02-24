@@ -42,7 +42,7 @@ namespace LSportsServer
             string strFromTime = strDate + " 00:00:00";
             string strToTime = strDate + " 23:59:59";
 
-            string sql = $"SELECT * FROM tb_recommend WHERE rec_lev = 1 AND status != 2 ORDER BY idx ASC";
+            string sql = $"SELECT * FROM tb_partner WHERE rec_lev = 1 AND status != 2 ORDER BY idx ASC";
             DataRowCollection recData = CMySql.GetDataQuery(sql);
             foreach (DataRow row in recData)
             {
@@ -65,7 +65,7 @@ namespace LSportsServer
                 if (recommendId_top.Trim() != string.Empty)
                 {
                     //-> 부본사 정산정보를 가져온다.
-                    sql = $"SELECT * FROM tb_recommend WHERE rec_lev = 9 AND rec_id = '{recommendId_top}'";
+                    sql = $"SELECT * FROM tb_partner WHERE rec_lev = 9 AND rec_id = '{recommendId_top}'";
                     DataRowCollection topRecData = CMySql.GetDataQuery(sql);
                     if (topRecData.Count == 0)
                         continue;
@@ -90,67 +90,67 @@ namespace LSportsServer
 
                 //$result = array();
                 //-> 결과대기중 배팅합계
-                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_ready FROM tb_total_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' and is_account = 1 AND result = 0 AND regdate between '{strFromTime}' AND '{strToTime}'{add_where}";
+                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_ready FROM tb_game_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' and is_account = 1 AND result = 0 AND regdate between '{strFromTime}' AND '{strToTime}'{add_where}";
                 DataRow rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_betting_ready = Convert.ToInt64(rowInfo["total_betting_ready"]);
 
                 //-> 스포츠 당첨된 배팅합계 + 당첨된 금액(배당)
-                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_win, IFNULL(SUM(result_money),0) AS total_result_win FROM tb_total_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' AND is_account = 1 AND result = 1 AND last_special_code< 3 ";
+                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_win, IFNULL(SUM(result_money),0) AS total_result_win FROM tb_game_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' AND is_account = 1 AND result = 1 AND last_special_code< 3 ";
                 sql += $"AND regdate BETWEEN '{strFromTime}' AND '{strToTime}'{add_where}";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_betting_win = Convert.ToInt64(rowInfo["total_betting_win"]);
                 long total_result_win = Convert.ToInt64(rowInfo["total_result_win"]);
 
                 //-> 스포츠 낙첨된 배팅합계
-                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_lose FROM tb_total_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' AND is_account = 1 AND result = 2 AND last_special_code < 3 AND regdate between '{strFromTime}' AND '{strToTime}'{add_where}";
+                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_lose FROM tb_game_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' AND is_account = 1 AND result = 2 AND last_special_code < 3 AND regdate between '{strFromTime}' AND '{strToTime}'{add_where}";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_betting_lose = CGlobal.ParseInt(rowInfo["total_betting_lose"]);
 
                 //-> 미니게임 당첨된 배팅합계 + 당첨된 금액(배당)
-                sql = $"select ifnull(sum(betting_money),0) as total_betting_win, ifnull(sum(result_money),0) as total_result_win from tb_total_cart where partner_sn = '{recommendSn}' and kubun = 'Y' and is_account = 1 and result = 1 and last_special_code >= 3 and regdate between '{strFromTime}' and '{strToTime}'";
+                sql = $"select ifnull(sum(betting_money),0) as total_betting_win, ifnull(sum(result_money),0) as total_result_win from tb_game_cart where partner_sn = '{recommendSn}' and kubun = 'Y' and is_account = 1 and result = 1 and last_special_code >= 3 and regdate between '{strFromTime}' and '{strToTime}'";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_betting_win_mgame = Convert.ToInt64(rowInfo["total_betting_win"]);
                 long total_result_win_mgame = Convert.ToInt64(rowInfo["total_result_win"]);
 
                 //-> 미니게임 낙첨된 배팅합계
-                sql = $"select ifnull(sum(betting_money),0) as total_betting_lose from tb_total_cart where partner_sn = '{recommendSn}' and kubun = 'Y' and is_account = 1 and result = 2 and last_special_code >= 3 and regdate between '{strFromTime}' AND '{strToTime}'";
+                sql = $"select ifnull(sum(betting_money),0) as total_betting_lose from tb_game_cart where partner_sn = '{recommendSn}' and kubun = 'Y' and is_account = 1 and result = 2 and last_special_code >= 3 and regdate between '{strFromTime}' AND '{strToTime}'";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_betting_lose_mgame = Convert.ToInt64(rowInfo["total_betting_lose"]);
 
                 //-> 입금 합계
-                sql = $"select ifnull(sum(agree_amount),0) as total_charge from tb_charge_log where state = 1 and member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}' and mem_status != 'G') and regdate between '{strFromTime}' AND '{strToTime}'";
+                sql = $"select ifnull(sum(agree_amount),0) as total_charge from tb_charge_log where state = 1 and member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}' and mem_status != 'G') and regdate between '{strFromTime}' AND '{strToTime}'";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_charge = Convert.ToInt64(rowInfo["total_charge"]);
 
                 //-> 출금 합계
-                sql = $"select ifnull(sum(agree_amount),0) as total_exchange from tb_exchange_log where state = 1 and member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}' and mem_status != 'G') and regdate between '{strFromTime}' AND '{strToTime}'";
+                sql = $"select ifnull(sum(agree_amount),0) as total_exchange from tb_exchange_log where state = 1 and member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}' and mem_status != 'G') and regdate between '{strFromTime}' AND '{strToTime}'";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_exchange = Convert.ToInt64(rowInfo["total_exchange"]);
 
                 //-> 충전(첫충) 포인트 합계
-                sql = $"select ifnull(sum(amount),0) as total_mileage_charge from tb_mileage_log where state = 1 and amount > 0 and regdate between '{strFromTime}' AND '{strToTime}' and member_sn in(select sn from tb_member where mem_status != 'G') and member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}')";
+                sql = $"select ifnull(sum(amount),0) as total_mileage_charge from tb_mileage_log where state = 1 and amount > 0 and regdate between '{strFromTime}' AND '{strToTime}' and member_sn in(select sn from tb_people where mem_status != 'G') and member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}')";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_mileage_charge = Convert.ToInt64(rowInfo["total_mileage_charge"]);
 
                 //-> 추천인 낙첨 포인트 합계
-                sql = $"select ifnull(sum(amount),0) as total_mileage_recommend_lose from tb_mileage_log where state = 12 and amount > 0 and regdate between '{strFromTime}' AND '{strToTime}' and member_sn in(select sn from tb_member where mem_status != 'G') and member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}')";
+                sql = $"select ifnull(sum(amount),0) as total_mileage_recommend_lose from tb_mileage_log where state = 12 and amount > 0 and regdate between '{strFromTime}' AND '{strToTime}' and member_sn in(select sn from tb_people where mem_status != 'G') and member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}')";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_mileage_recommend_lose = Convert.ToInt64(rowInfo["total_mileage_recommend_lose"]);
 
                 //-> 다폴더 포인트 합계
-                sql = $"select ifnull(sum(amount),0) as total_mileage_multi_folder from tb_mileage_log where state = 3 and amount > 0 and regdate between '{strFromTime}' and '{strToTime}' and member_sn in(select sn from tb_member where mem_status != 'G') and member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}')";
+                sql = $"select ifnull(sum(amount),0) as total_mileage_multi_folder from tb_mileage_log where state = 3 and amount > 0 and regdate between '{strFromTime}' and '{strToTime}' and member_sn in(select sn from tb_people where mem_status != 'G') and member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}')";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_mileage_multi_folder = Convert.ToInt64(rowInfo["total_mileage_multi_folder"]);
 
                 //-> 다폴더 낙첨 포인트 합계
-                sql = $"select ifnull(sum(a.amount),0) as total_mileage_multi_folder_lose from tb_mileage_log a, tb_total_cart b where a.state = 4 and a.amount > 0 and a.betting_no = b.betting_no and b.betting_cnt > 1 and ";
-                sql += $"a.regdate between '{strFromTime}' AND '{strToTime}' and a.member_sn in(select sn from tb_member where mem_status != 'G') and a.member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}')";
+                sql = $"select ifnull(sum(a.amount),0) as total_mileage_multi_folder_lose from tb_mileage_log a, tb_game_cart b where a.state = 4 and a.amount > 0 and a.betting_no = b.betting_no and b.betting_cnt > 1 and ";
+                sql += $"a.regdate between '{strFromTime}' AND '{strToTime}' and a.member_sn in(select sn from tb_people where mem_status != 'G') and a.member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}')";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_mileage_multi_folder_lose = Convert.ToInt64(rowInfo["total_mileage_multi_folder_lose"]);
 
                 //-> 단폴더 낙첨 포인트 합계
-                sql = $"select ifnull(sum(a.amount),0) as total_mileage_one_folder_lose from tb_mileage_log a, tb_total_cart b where a.state = 4 and a.amount > 0 and a.betting_no = b.betting_no and b.betting_cnt = 1 and ";
-                sql += $"a.regdate between '{strFromTime}' AND '{strToTime}' and a.member_sn in(select sn from tb_member where mem_status != 'G') and a.member_sn in(select sn from tb_member where recommend_sn = '{recommendSn}')";
+                sql = $"select ifnull(sum(a.amount),0) as total_mileage_one_folder_lose from tb_mileage_log a, tb_game_cart b where a.state = 4 and a.amount > 0 and a.betting_no = b.betting_no and b.betting_cnt = 1 and ";
+                sql += $"a.regdate between '{strFromTime}' AND '{strToTime}' and a.member_sn in(select sn from tb_people where mem_status != 'G') and a.member_sn in(select sn from tb_people where recommend_sn = '{recommendSn}')";
                 rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_mileage_one_folder_lose = Convert.ToInt64(rowInfo["total_mileage_one_folder_lose"]);
 
@@ -312,7 +312,7 @@ namespace LSportsServer
                 long get_tex_money = 0;
                 long get_tex_money_top = 0;
 
-                sql = $"select idx, get_tex_money, get_tex_money_top from tb_recommend_tex where rec_sn = '{recommendSn}' and regdate between '{strFromTime}' and '{strToTime}'";
+                sql = $"select idx, get_tex_money, get_tex_money_top from tb_partner_tex where rec_sn = '{recommendSn}' and regdate between '{strFromTime}' and '{strToTime}'";
                 DataRowCollection lstLog = CMySql.GetDataQuery(sql);
                 if (lstLog.Count > 0)
                 {
@@ -328,7 +328,7 @@ namespace LSportsServer
                 if (tex_log_idx > 0)
                 {
                     //-> 정산 정보 Update
-                    sql = $"UPDATE tb_recommend_tex SET rec_sn_top = '{recommendSn_top}', rec_id_top = '{recommendId_top}',save_rate_type = '{tex_type_name}', save_rate_top = '{add_tex_rate_top}', save_rate = '{add_tex_rate}', save_one_folder_flag = '{one_folder_flag}', ";
+                    sql = $"UPDATE tb_partner_tex SET rec_sn_top = '{recommendSn_top}', rec_id_top = '{recommendId_top}',save_rate_type = '{tex_type_name}', save_rate_top = '{add_tex_rate_top}', save_rate = '{add_tex_rate}', save_one_folder_flag = '{one_folder_flag}', ";
                     sql += $"money_to_charge = '{total_charge}', money_to_exchange = '{total_exchange}', betting_to_ready = '{total_betting_ready}', betting_to_win = '{total_betting_win}', betting_to_win_mgame = '{total_betting_win_mgame}', ";
                     sql += $"betting_to_lose = '{total_betting_lose}', betting_to_lose_mgame = '{total_betting_lose_mgame}', result_to_win = '{total_result_win}', result_to_win_mgame = '{total_result_win_mgame}', mileage_to_charge = '{total_mileage_charge}', ";
                     sql += $"mileage_to_recomm_lose = '{total_mileage_recommend_lose}', mileage_to_multi_folder = '{total_mileage_multi_folder}', mileage_to_multi_folder_lose = '{total_mileage_multi_folder_lose}', mileage_to_one_folder_lose = '{total_mileage_one_folder_lose}', ";
@@ -341,14 +341,14 @@ namespace LSportsServer
                 else
                 {
                     //-> 정산 정보 Insert
-                    sql = $"INSERT INTO tb_recommend_tex(rec_sn_top, rec_sn, rec_id_top, rec_id, save_rate_type, save_rate_top, save_rate, save_one_folder_flag, money_to_charge, money_to_exchange, betting_to_ready, betting_to_win, betting_to_win_mgame, betting_to_lose, betting_to_lose_mgame, ";
+                    sql = $"INSERT INTO tb_partner_tex(rec_sn_top, rec_sn, rec_id_top, rec_id, save_rate_type, save_rate_top, save_rate, save_one_folder_flag, money_to_charge, money_to_exchange, betting_to_ready, betting_to_win, betting_to_win_mgame, betting_to_lose, betting_to_lose_mgame, ";
                     sql += $"result_to_win, result_to_win_mgame, mileage_to_charge, mileage_to_recomm_lose, mileage_to_multi_folder, mileage_to_multi_folder_lose, mileage_to_one_folder_lose, tex_money_top, tex_money, regdate) VALUES('{recommendSn_top}', '{recommendSn}', ";
                     sql += $"'{recommendId_top}', '{recommendId}', '{tex_type_name}', '{add_tex_rate_top}', '{add_tex_rate}', '{one_folder_flag}', '{total_charge}', '{total_exchange}', '{total_betting_ready}', '{total_betting_win}', '{total_betting_win_mgame}', '{total_betting_lose}', ";
                     sql += $"'{total_betting_lose_mgame}', '{total_result_win}', '{total_result_win_mgame}', '{total_mileage_charge}', '{total_mileage_recommend_lose}', '{total_mileage_multi_folder}', '{total_mileage_multi_folder_lose}', '{total_mileage_one_folder_lose}', ";
                     sql += $"'{tex_money_top}', '{tex_money}', '{strFromTime}')";
 
                     CMySql.ExcuteQuery(sql);
-                    sql = $"SELECT  idx FROM tb_recommend_tex ORDER BY idx DESC  LIMIT 1";
+                    sql = $"SELECT  idx FROM tb_partner_tex ORDER BY idx DESC  LIMIT 1";
                     tex_log_idx = CGlobal.ParseInt(CMySql.GetDataQuery(sql)[0]["idx"]);
                     procCnt++;
                 }
@@ -363,7 +363,7 @@ namespace LSportsServer
                 long sum_tex_money = 0;
                 if (recommendSn > 0)
                 {
-                    sql = $"SELECT SUM(tex_money) AS sum_tex_money FROM tb_recommend_tex WHERE is_checked = 0 AND rec_sn = '{recommendSn}' ";
+                    sql = $"SELECT SUM(tex_money) AS sum_tex_money FROM tb_partner_tex WHERE is_checked = 0 AND rec_sn = '{recommendSn}' ";
                     DataRowCollection texList = CMySql.GetDataQuery(sql);
                     if (texList.Count > 0)
                     {
@@ -375,7 +375,7 @@ namespace LSportsServer
                 //-> 부본사 현재까지의 예상정산금
                 long sum_tex_money_top = 0;
                 if (recommendSn_top > 0) { 
-                    sql = $"SELECT SUM(tex_money_top) AS sum_tex_money_top FROM tb_recommend_tex WHERE is_checked_top = 0 AND rec_sn_top = '{recommendSn_top}'";
+                    sql = $"SELECT SUM(tex_money_top) AS sum_tex_money_top FROM tb_partner_tex WHERE is_checked_top = 0 AND rec_sn_top = '{recommendSn_top}'";
                     DataRowCollection texTopList = CMySql.GetDataQuery(sql);
                     if (texTopList.Count > 0)
                     {
@@ -388,7 +388,7 @@ namespace LSportsServer
                 if ((update_res == true || tex_log_idx > 0) && total_betting_ready == 0 && get_tex_money == 0 && get_tex_money_top == 0 && (sum_tex_money != 0 || sum_tex_money_top != 0))
                 {
                     //-> 현재 부본사 머니
-                    sql = $"select rec_money from tb_recommend where Idx = '{recommendSn_top}'";
+                    sql = $"select rec_money from tb_partner where Idx = '{recommendSn_top}'";
                     DataRowCollection list = CMySql.GetDataQuery(sql);
                     if(list.Count > 0)
                     {
@@ -398,42 +398,42 @@ namespace LSportsServer
                         long after_money_top = Convert.ToInt64(info["rec_money"]) + sum_tex_money_top;
 
                         //-> 부본사 정산로그 [get_tex_money, texdate] Update
-                        sql = $"update tb_recommend_tex set get_tex_money_top = '{sum_tex_money_top}', texdate = '{strFromTime}', is_checked_top = 1, confirm_date_top = '{strToTime}' where idx = {tex_log_idx}";
+                        sql = $"update tb_partner_tex set get_tex_money_top = '{sum_tex_money_top}', texdate = '{strFromTime}', is_checked_top = 1, confirm_date_top = '{strToTime}' where idx = {tex_log_idx}";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 부본사 미정산 내역들을 모두 정산됨으로 Update
-                        sql = $"update tb_recommend_tex set is_checked_top = 1, confirm_date_top = '{strToTime}' where is_checked_top = 0 AND rec_sn_top = '{recommendSn_top}'";
+                        sql = $"update tb_partner_tex set is_checked_top = 1, confirm_date_top = '{strToTime}' where is_checked_top = 0 AND rec_sn_top = '{recommendSn_top}'";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 부본사 머니 업데이트
-                        sql = $"update tb_recommend set rec_money = {after_money_top} where Idx = {recommendSn_top}";
+                        sql = $"update tb_partner set rec_money = {after_money_top} where Idx = {recommendSn_top}";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 부본사 머니 로그 Insert
-                        sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) ";
+                        sql = $"INSERT INTO tb_partner_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) ";
                         sql += $"VALUES('{recommendSn_top}', '{sum_tex_money_top}', '{before_money_top}', '{after_money_top}', '9', '부본사 정산금 입금', '1', '1', '{strFromTime}', '{strFromTime}')";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 총판 정산로그 [get_tex_money, texdate] Update
-                        sql = $"update tb_recommend_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
+                        sql = $"update tb_partner_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 총판 미정산 내역들을 모두 정산됨으로 Update
-                        sql = $"update tb_recommend_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
+                        sql = $"update tb_partner_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 현재 총판 머니
-                        sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
+                        sql = $"select rec_money from tb_partner where Idx = '{recommendSn}'";
                         info = CMySql.GetDataQuery(sql)[0];
                         long before_money = Convert.ToInt64(info["rec_money"]);
                         long after_money = before_money + sum_tex_money;
 
                         //-> 총판 머니 업데이트
-                        sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
+                        sql = $"update tb_partner set rec_money = '{after_money}' where Idx = {recommendSn}";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 총판 머니 로그 Insert
-                        sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
+                        sql = $"INSERT INTO tb_partner_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
                         sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
                         CMySql.ExcuteQuery(sql);
                     }
@@ -441,25 +441,25 @@ namespace LSportsServer
                     {
 
                         //-> 정산로그 [get_tex_money, texdate] Update
-                        sql = $"update tb_recommend_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
+                        sql = $"update tb_partner_tex set get_tex_money = '{sum_tex_money}', texdate = '{strFromTime}', is_checked = 1, confirm_date = '{strToTime}' where idx = {tex_log_idx}";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 총판 미정산 내역들을 모두 정산됨으로 Update
-                        sql = $"update tb_recommend_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
+                        sql = $"update tb_partner_tex set is_checked = 1, confirm_date = '{strToTime}' where is_checked = 0 AND rec_sn = '{recommendSn}'";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 현재 총판 머니
-                        sql = $"select rec_money from tb_recommend where Idx = '{recommendSn}'";
+                        sql = $"select rec_money from tb_partner where Idx = '{recommendSn}'";
                         DataRow info = CMySql.GetDataQuery(sql)[0];
                         long before_money = Convert.ToInt64(info["rec_money"]);
                         long after_money = before_money + sum_tex_money;
 
                         //-> 총판 머니 업데이트
-                        sql = $"update tb_recommend set rec_money = '{after_money}' where Idx = {recommendSn}";
+                        sql = $"update tb_partner set rec_money = '{after_money}' where Idx = {recommendSn}";
                         CMySql.ExcuteQuery(sql);
 
                         //-> 총판 머니 로그 Insert
-                        sql = $"INSERT INTO tb_recommend_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
+                        sql = $"INSERT INTO tb_partner_money_log(rec_sn, amount, before_money, after_money, state, status_message, proc_flag, is_read, procdate, regdate) VALUES('{recommendSn}', '{sum_tex_money}', ";
                         sql += $"'{before_money}', '{after_money}', 1, '총판 정산금 입금', 1, 1, '{strFromTime}', '{strFromTime}')";
                         CMySql.ExcuteQuery(sql);
                     }
@@ -534,16 +534,16 @@ namespace LSportsServer
             sql = $"DELETE FROM tb_child WHERE gameDate < '{strPreBettingDate}' OR (CONCAT(tb_child.gameDate, ' ', tb_child.gameHour, ':', tb_child.gameTime) <= '{strNowTime} 00:00' AND special < 5 AND sn NOT IN (SELECT child_sn FROM tb_subchild))";
             lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_total_betting WHERE tb_total_betting.betting_no IN (SELECT tb_total_cart.betting_no FROM tb_total_cart WHERE tb_total_cart.bet_date < '{strPreBettingDate} 00:00:00')";
+            sql = $"DELETE FROM tb_game_betting WHERE tb_game_betting.betting_no IN (SELECT tb_game_cart.betting_no FROM tb_game_cart WHERE tb_game_cart.bet_date < '{strPreBettingDate} 00:00:00')";
             lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_total_betting_cancel WHERE tb_total_betting_cancel.betting_no IN (SELECT tb_total_cart_cancel.betting_no FROM tb_total_cart_cancel WHERE tb_total_cart_cancel.bet_date < '{strPreBettingDate} 00:00:00')";
+            sql = $"DELETE FROM tb_game_betting_cancel WHERE tb_game_betting_cancel.betting_no IN (SELECT tb_game_cart_cancel.betting_no FROM tb_game_cart_cancel WHERE tb_game_cart_cancel.bet_date < '{strPreBettingDate} 00:00:00')";
             lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_total_cart WHERE bet_date < '{strPreBettingDate} 00:00:00'";
+            sql = $"DELETE FROM tb_game_cart WHERE bet_date < '{strPreBettingDate} 00:00:00'";
             lstSql.Add(sql);
 
-            sql = $"DELETE FROM tb_total_cart_cancel WHERE bet_date < '{strPreBettingDate} 00:00:00'";
+            sql = $"DELETE FROM tb_game_cart_cancel WHERE bet_date < '{strPreBettingDate} 00:00:00'";
             lstSql.Add(sql);
 
             sql = $"DELETE FROM tb_score WHERE strTime < '{ strYesterday } 00:00:00'";

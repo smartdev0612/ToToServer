@@ -286,7 +286,7 @@ namespace LSportsServer
             }
 
             //-> 유저 정보
-            sql = $"SELECT * FROM tb_member WHERE sn = {nUser}";
+            sql = $"SELECT * FROM tb_people WHERE sn = {nUser}";
             DataRowCollection lstUser = CMySql.GetDataQuery(sql);
             if(lstUser.Count == 0)
             {
@@ -331,11 +331,11 @@ namespace LSportsServer
             int sumBetMoney = 0;    // 미니게임 한개 회차에서 한 메뉴에 배팅한 총 금액
             if (moneyLimitOption == 0)  // 픽별 배팅한도
             {
-                sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_betting.member_sn = '{nUser}'";
+                sql = $"SELECT IFNULL(SUM(tb_game_betting.bet_money), 0) AS sumBetMoney FROM tb_game_betting LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_game_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_game_betting.mini_game_code = '{gameType}' AND tb_game_betting.member_sn = '{nUser}'";
             } 
             else                        // 회차별 배팅한도
             {
-                sql = $"SELECT IFNULL(SUM(tb_total_betting.bet_money), 0) AS sumBetMoney FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_total_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.member_sn = '{nUser}'";
+                sql = $"SELECT IFNULL(SUM(tb_game_betting.bet_money), 0) AS sumBetMoney FROM tb_game_betting LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_game_betting.result IN (0, 1) AND tb_child.special = {specialCode} AND tb_child.game_th = '{btGameTh}' AND tb_game_betting.member_sn = '{nUser}'";
             }
             DataRowCollection rowList = CMySql.GetDataQuery(sql);
             if (rowList.Count > 0)
@@ -361,11 +361,11 @@ namespace LSportsServer
             int sumResultMoney = 0;    // 미니게임 한개 회차에 한 메뉴에 당첨한 총 금액
             if (moneyLimitOption == 0)  // 픽별 배팅한도
             {
-                sql = $"SELECT IFNULL(SUM(tb_total_cart.betting_money * tb_total_cart.result_rate), 0) AS sumResultMoney FROM tb_total_cart LEFT JOIN tb_total_betting ON tb_total_cart.betting_no = tb_total_betting.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_total_betting.mini_game_code = '{gameType}' AND tb_total_cart.member_sn = '{nUser}'";
+                sql = $"SELECT IFNULL(SUM(tb_game_cart.betting_money * tb_game_cart.result_rate), 0) AS sumResultMoney FROM tb_game_cart LEFT JOIN tb_game_betting ON tb_game_cart.betting_no = tb_game_betting.betting_no LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_game_betting.mini_game_code = '{gameType}' AND tb_game_cart.member_sn = '{nUser}'";
             }
             else                        // 회차별 배팅한도
             {
-                sql = $"SELECT IFNULL(SUM(tb_total_cart.betting_money * tb_total_cart.result_rate), 0) AS sumResultMoney FROM tb_total_cart LEFT JOIN tb_total_betting ON tb_total_cart.betting_no = tb_total_betting.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_total_cart.member_sn = '{nUser}'";
+                sql = $"SELECT IFNULL(SUM(tb_game_cart.betting_money * tb_game_cart.result_rate), 0) AS sumResultMoney FROM tb_game_cart LEFT JOIN tb_game_betting ON tb_game_cart.betting_no = tb_game_betting.betting_no LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.special = {specialCode}  AND tb_child.game_th = '{btGameTh}' AND tb_game_cart.member_sn = '{nUser}'";
             }
             rowList = CMySql.GetDataQuery(sql);
             if (rowList.Count > 0)
@@ -389,7 +389,7 @@ namespace LSportsServer
             }
 
             //-> 구매코드생성
-            sql = "SELECT MAX(sn) AS last_sn FROM tb_total_cart";
+            sql = "SELECT MAX(sn) AS last_sn FROM tb_game_cart";
             DataRowCollection lstTemp = CMySql.GetDataQuery(sql);
             int lastCartIdx = 0;
             if (lstTemp.Count > 0)
@@ -412,7 +412,7 @@ namespace LSportsServer
 			double away_rate = Convert.ToDouble(gameInfo["away_rate"]);
 			double draw_rate = Convert.ToDouble(gameInfo["draw_rate"]);
 
-            sql = $"INSERT INTO tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,mini_game_code) VALUES({subChildSn}, {nUser}, '{protoId}', {selectTeam}, {home_rate}, {draw_rate}, {away_rate}, {btRateTotal}, 1, 0, 0, 'Y', {btMoney}, '{gameType}')";
+            sql = $"INSERT INTO tb_game_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,mini_game_code) VALUES({subChildSn}, {nUser}, '{protoId}', {selectTeam}, {home_rate}, {draw_rate}, {away_rate}, {btRateTotal}, 1, 0, 0, 'Y', {btMoney}, '{gameType}')";
             CMySql.ExcuteQuery(sql);
 
             string strUserID = Convert.ToString(userInfo["uid"]);
@@ -422,7 +422,7 @@ namespace LSportsServer
             int user_account_enable = user_status == "G" ? 0 : 1;
             string bettingIp = Convert.ToString(Context.UserEndPoint.Address);
 
-            sql = $"insert into tb_total_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del, bet_date, is_account, betting_ip, last_special_code, logo,s_type) values({nUser}, '{protoId}', 0, now(), now(), 'Y', 0, 1, {userMoney}, {btMoney}, {btRateTotal}, 0, {user_recommend_sn}, {user_rolling_sn}, '0', 'N', now(), {user_account_enable}, '{bettingIp}', {specialCode}, 'gadget', 0)";
+            sql = $"insert into tb_game_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del, bet_date, is_account, betting_ip, last_special_code, logo,s_type) values({nUser}, '{protoId}', 0, now(), now(), 'Y', 0, 1, {userMoney}, {btMoney}, {btRateTotal}, 0, {user_recommend_sn}, {user_rolling_sn}, '0', 'N', now(), {user_account_enable}, '{bettingIp}', {specialCode}, 'gadget', 0)";
             CMySql.ExcuteQuery(sql);
 
             sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nBetCash, nMode, strBetTime) VALUES ('{strUserID}', {user_recommend_sn}, {btMoney}, 2, now())";
@@ -431,7 +431,7 @@ namespace LSportsServer
             string mem_status = Convert.ToString(userInfo["mem_status"]);
             int before = CGlobal.ParseInt(userInfo["g_money"]);
             int after = before - btMoney;
-            sql = $"update tb_member set g_money = g_money - {btMoney} where sn = {nUser}";
+            sql = $"update tb_people set g_money = g_money - {btMoney} where sn = {nUser}";
             CMySql.ExcuteQuery(sql);
 
             if (mem_status == "N")

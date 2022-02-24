@@ -64,7 +64,7 @@ namespace LSportsServer
             }
 
             //유저정보를 얻는다.
-            string sql = $"SELECT * FROM tb_member WHERE sn = {nUser}";
+            string sql = $"SELECT * FROM tb_people WHERE sn = {nUser}";
             DataRowCollection list = CMySql.GetDataQuery(sql);
             if (list.Count == 0)
             {
@@ -141,7 +141,7 @@ namespace LSportsServer
             }
 
             //-> 게임번호
-            sql = "SELECT MAX(sn) AS last_sn FROM tb_total_cart";
+            sql = "SELECT MAX(sn) AS last_sn FROM tb_game_cart";
             DataRow maxCart = CMySql.GetDataQuery(sql)[0];
             int lastIdx = maxCart["last_sn"] == DBNull.Value ? 0 : CGlobal.ParseInt(maxCart["last_sn"]);
 
@@ -288,7 +288,7 @@ namespace LSportsServer
                 if (homeTeamName.Trim().Length == homeTeamName.Trim().Replace("보너스", "").Length)
                 {
                     //-> 같은게임(childSn) 같은 방향(selected)에 배팅한 betting_no를 모두 저장
-                    sql = $"select distinct(a.betting_no) from tb_total_betting a, tb_total_cart b where a.betting_no = b.betting_no and a.result = 0 and a.member_sn = '{nUser}' and a.sub_child_sn = '{subChildSn}' and a.select_no = '{selected}'";
+                    sql = $"select distinct(a.betting_no) from tb_game_betting a, tb_game_cart b where a.betting_no = b.betting_no and a.result = 0 and a.member_sn = '{nUser}' and a.sub_child_sn = '{subChildSn}' and a.select_no = '{selected}'";
                     DataRowCollection cukbet_row = CMySql.GetDataQuery(sql);
                     for (int j = 0; j < cukbet_row.Count; j++)
                     {
@@ -310,7 +310,7 @@ namespace LSportsServer
             //-> 배팅번호 게임중(다폴 등) 낙첨된 경기가 있으면 해당 배팅번호 제외.
             for (int j = 0; j < cukbet_no_list.Count; j++)
             {
-                sql = $"select betting_no from tb_total_betting where betting_no = '{cukbet_no_list[j]}' and result = 2";
+                sql = $"select betting_no from tb_game_betting where betting_no = '{cukbet_no_list[j]}' and result = 2";
                 DataRowCollection loseGameRow = CMySql.GetDataQuery(sql);
                 if (loseGameRow.Count == 0)
                 {
@@ -324,7 +324,7 @@ namespace LSportsServer
             {
                 double ckbet_rate = 1;
                 int ckbet_money = 0;
-                sql = $"select select_rate, bet_money from tb_total_betting where member_sn = '{nUser}' and betting_no = '{newCukbet_no_list[i]}'";
+                sql = $"select select_rate, bet_money from tb_game_betting where member_sn = '{nUser}' and betting_no = '{newCukbet_no_list[i]}'";
                 DataRowCollection betgame_row = CMySql.GetDataQuery(sql);
                 for (int j = 0; j < betgame_row.Count; j++)
                 {
@@ -367,14 +367,14 @@ namespace LSportsServer
                     continue;
 
                 int sumBetMoney = 0;    // 한 경기에 배팅한 총 금액
-                sql = $"SELECT tb_total_betting.betting_no FROM tb_total_betting LEFT JOIN tb_total_cart ON tb_total_betting.betting_no = tb_total_cart.betting_no LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.sn = {childSn} AND tb_total_betting.game_type = {gameType} AND tb_total_betting.member_sn = '{nUser}'";
+                sql = $"SELECT tb_game_betting.betting_no FROM tb_game_betting LEFT JOIN tb_game_cart ON tb_game_betting.betting_no = tb_game_cart.betting_no LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.sn = {childSn} AND tb_game_betting.game_type = {gameType} AND tb_game_betting.member_sn = '{nUser}'";
                 DataRowCollection rowList = CMySql.GetDataQuery(sql);
                 if(rowList.Count > 0)
                 {
                     foreach (DataRow rowInfo in rowList)
                     {
                         string betting_no = Convert.ToString(rowInfo["betting_no"]);
-                        sql = $"SELECT * FROM tb_total_cart WHERE betting_no = '{betting_no}'";
+                        sql = $"SELECT * FROM tb_game_cart WHERE betting_no = '{betting_no}'";
                         DataRow cartInfo = CMySql.GetDataQuery(sql)[0];
                         int cart_result = Convert.ToInt32(cartInfo["result"]);
                         if(cart_result == 1)
@@ -383,7 +383,7 @@ namespace LSportsServer
                         } 
                         else
                         {
-                            sql = $"SELECT * FROM tb_total_betting WHERE betting_no = '{betting_no}'";
+                            sql = $"SELECT * FROM tb_game_betting WHERE betting_no = '{betting_no}'";
                             DataRowCollection bettingList = CMySql.GetDataQuery(sql);
                             if(bettingList.Count > 0)
                             {
@@ -409,7 +409,7 @@ namespace LSportsServer
                 }
 
                 int sumResultMoney = 0;    // 한 경기에 당첨한 총 금액
-                sql = $"SELECT IFNULL(SUM(tb_total_cart.result_money), 0) AS sumResultMoney FROM tb_total_cart WHERE tb_total_cart.betting_no IN ( SELECT tb_total_betting.betting_no FROM tb_total_betting LEFT JOIN tb_subchild ON tb_total_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.sn = {childSn} AND tb_total_betting.game_type = {gameType}  AND tb_total_betting.member_sn = '{nUser}' GROUP BY tb_total_betting.betting_no )";
+                sql = $"SELECT IFNULL(SUM(tb_game_cart.result_money), 0) AS sumResultMoney FROM tb_game_cart WHERE tb_game_cart.betting_no IN ( SELECT tb_game_betting.betting_no FROM tb_game_betting LEFT JOIN tb_subchild ON tb_game_betting.sub_child_sn = tb_subchild.sn LEFT JOIN tb_child ON tb_subchild.child_sn = tb_child.sn WHERE tb_child.sn = {childSn} AND tb_game_betting.game_type = {gameType}  AND tb_game_betting.member_sn = '{nUser}' GROUP BY tb_game_betting.betting_no )";
                 rowList = CMySql.GetDataQuery(sql);
                 if (rowList.Count > 0)
                 {
@@ -662,7 +662,7 @@ namespace LSportsServer
                     rate2 = rate1;
                     rate3 = rate1;
 
-                    sql = $"insert into tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,s_type, betid) ";
+                    sql = $"insert into tb_game_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,s_type, betid) ";
                     sql += $"values({subChildSn}, {nUser}, '{protoId}', {selected}, {rate1}, {rate2}, {rate3}, {selectedRate}, {gameType}, 1, 1, '{buy}', {betting}, 1, 'bonus')";
                     CMySql.ExcuteQuery(sql);
                 }
@@ -692,7 +692,7 @@ namespace LSportsServer
                     string score = $"{clsGame.m_nHomeScore}-{clsGame.m_nAwayScore}";
                     int live = _gameType == "live" ? 1 : 0;
 
-                    sql = $"insert into tb_total_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,s_type,betid, score, live) ";
+                    sql = $"insert into tb_game_betting(sub_child_sn,member_sn,betting_no,select_no,home_rate,draw_rate,away_rate, select_rate,game_type,event,result,kubun,bet_money,s_type,betid, score, live) ";
                     sql += $"values({subChildSn}, {nUser}, '{protoId}', {selected}, {rate1}, {rate2}, {rate3}, {selectedRate}, {gameType}, 0, 0, '{buy}', {betting}, 1, '{betid}', '{score}', {live})";
                     int nSn = CMySql.ExcuteQuery(sql);
 
@@ -733,7 +733,7 @@ namespace LSportsServer
             string bettingIp = Convert.ToString(Context.UserEndPoint.Address);
             string bet_date = CMyTime.GetMyTimeStr("yyyy-MM-dd");
 
-            sql = $"INSERT INTO tb_total_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del,bet_date, is_account,betting_ip, last_special_code,logo,s_type) VALUES ({nUser}, '{protoId}', 0, now(), now(), '{buy}', 0, {betting_cnt}, {dbCash}, {betting}, {resultRate}, 0, {recommendSn}, {rollingSn}, 0, 'N', now(), {accountEnable}, '{bettingIp}', {lastSpecialCode}, 'gadget', 0)";
+            sql = $"INSERT INTO tb_game_cart(member_sn, betting_no, parent_sn, regdate, operdate, kubun, result, betting_cnt, before_money, betting_money, result_rate, result_money, partner_sn, rolling_sn, bouns_rate, user_del,bet_date, is_account,betting_ip, last_special_code,logo,s_type) VALUES ({nUser}, '{protoId}', 0, now(), now(), '{buy}', 0, {betting_cnt}, {dbCash}, {betting}, {resultRate}, 0, {recommendSn}, {rollingSn}, 0, 'N', now(), {accountEnable}, '{bettingIp}', {lastSpecialCode}, 'gadget', 0)";
             CMySql.ExcuteQuery(sql);
 
             sql = $"INSERT INTO api_betting(strUserID, nStoreSn, nBetCash, nMode, strBetTime) VALUES ('{strUserID}', {recommendSn}, {betting}, 1, now())";
@@ -745,14 +745,14 @@ namespace LSportsServer
             if (chkFolderOption == "1")
             {
                 int bouns_rate_percent = CGlobal.ParseInt(bonusInfo[$"folder_bouns{betting_cnt}"]);
-                sql = $"update tb_total_cart set bouns_rate = {bouns_rate_percent} where member_sn = {nUser} and betting_no = '{protoId}'";
+                sql = $"update tb_game_cart set bouns_rate = {bouns_rate_percent} where member_sn = {nUser} and betting_no = '{protoId}'";
                 CMySql.ExcuteQuery(sql);
             }
 
             string mem_status = Convert.ToString(userInfo["mem_status"]);
             int before = CGlobal.ParseInt(userInfo["g_money"]);
             int after = before - betting;
-            sql = $"update tb_member set g_money = g_money - {betting} where sn = {nUser}";
+            sql = $"update tb_people set g_money = g_money - {betting} where sn = {nUser}";
             CMySql.ExcuteQuery(sql);
 
             if (mem_status == "N")
