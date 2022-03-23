@@ -4,7 +4,7 @@
 	  <db_name>mubayo2_lsports</db_name>
 	  <db_user>traxex</db_user>
 	  <db_pass>pwdTraxex0701</db_pass>
-  
+
 	  <lsports_address>175.125.95.163</lsports_address>
 	  <lsports_prematch_live>3010</lsports_prematch_live>
 	  <lsports_inplay_live>3011</lsports_inplay_live>

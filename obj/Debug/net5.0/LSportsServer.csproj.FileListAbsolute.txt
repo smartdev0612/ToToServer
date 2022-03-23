@@ -155,3 +155,10 @@ I:\Sports\ToToServer\obj\Debug\net5.0\Sports.MvcApplicationPartsAssemblyInfo.cac
 I:\Sports\ToToServer\obj\Debug\net5.0\Sports.dll
 I:\Sports\ToToServer\obj\Debug\net5.0\ref\Sports.dll
 I:\Sports\ToToServer\obj\Debug\net5.0\Sports.pdb
+D:\project\server\ToToServer\bin\Debug\net5.0\Sports.exe
+D:\project\server\ToToServer\bin\Debug\net5.0\Sports.dll
+D:\project\server\ToToServer\bin\Debug\net5.0\Sports.pdb
+D:\project\server\ToToServer\bin\Debug\net5.0\MySql.Data.dll
+D:\project\server\ToToServer\bin\Debug\net5.0\Newtonsoft.Json.dll
+D:\project\server\ToToServer\bin\Debug\net5.0\System.Configuration.ConfigurationManager.dll
+D:\project\server\ToToServer\bin\Debug\net5.0\websocket-sharp.dll

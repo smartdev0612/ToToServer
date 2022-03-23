@@ -94,6 +94,16 @@ namespace LSportsServer
                 DataRow rowInfo = CMySql.GetDataQuery(sql)[0];
                 long total_betting_ready = Convert.ToInt64(rowInfo["total_betting_ready"]);
 
+                //-> 스포츠 총 배팅합계
+                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting FROM tb_game_cart WHERE partner_sn = '{recommendSn}' AND is_account = 1 AND last_special_code < 3 AND regdate between '{strFromTime}' AND '{strToTime}'{add_where}";
+                rowInfo = CMySql.GetDataQuery(sql)[0];
+                long total_betting_sports = Convert.ToInt64(rowInfo["total_betting"]);
+
+                //-> 미니게임 총 배팅합계
+                sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting FROM tb_game_cart WHERE partner_sn = '{recommendSn}' AND is_account = 1 AND last_special_code >= 3 AND regdate between '{strFromTime}' AND '{strToTime}'{add_where}";
+                rowInfo = CMySql.GetDataQuery(sql)[0];
+                long total_betting_mini = Convert.ToInt64(rowInfo["total_betting"]);
+
                 //-> 스포츠 당첨된 배팅합계 + 당첨된 금액(배당)
                 sql = $"SELECT IFNULL(SUM(betting_money),0) AS total_betting_win, IFNULL(SUM(result_money),0) AS total_result_win FROM tb_game_cart WHERE partner_sn = '{recommendSn}' AND kubun = 'Y' AND is_account = 1 AND result = 1 AND last_special_code< 3 ";
                 sql += $"AND regdate BETWEEN '{strFromTime}' AND '{strToTime}'{add_where}";
@@ -202,8 +212,8 @@ namespace LSportsServer
                 {
                     //-> 기본정산비율인 $rate_sport의 비율로 정산.
                     tex_type_name = "배팅금(미니제외)";
-                    tex_money = CGlobal.ParseInt(((total_betting_win + total_betting_lose) * rate_sport) * 0.01);                    //-> 총판
-                    tex_money_top = CGlobal.ParseInt(((total_betting_win + total_betting_lose) * rate_sport_top) * 0.01);            //-> 부본사
+                    tex_money = CGlobal.ParseInt((total_betting_sports * rate_sport) * 0.01);                    //-> 총판
+                    tex_money_top = CGlobal.ParseInt((total_betting_sports * rate_sport_top) * 0.01);            //-> 부본사
                 }
                 else if (tex_type_top == "betting_m" || tex_type == "betting_m")
                 {
@@ -211,12 +221,12 @@ namespace LSportsServer
                     tex_type_name = "배팅금(미니포함)";
 
                     //-> 스포츠 : 총배팅금 * 비율%
-                    tex_money_s = CGlobal.ParseInt(((total_betting_win + total_betting_lose) * rate_sport) * 0.01);
-                    tex_money_top_s = CGlobal.ParseInt(((total_betting_win + total_betting_lose) * rate_sport_top) * 0.01);
+                    tex_money_s = CGlobal.ParseInt((total_betting_sports * rate_sport) * 0.01);
+                    tex_money_top_s = CGlobal.ParseInt((total_betting_sports * rate_sport_top) * 0.01);
 
                     //-> 미니게임 : 총배팅금 * 비율%
-                    tex_money_m = CGlobal.ParseInt(((total_betting_win_mgame + total_betting_lose_mgame) * rate_minigame) * 0.01);
-                    tex_money_top_m = CGlobal.ParseInt(((total_betting_win_mgame + total_betting_lose_mgame) * rate_minigame_top) * 0.01);
+                    tex_money_m = CGlobal.ParseInt((total_betting_mini * rate_minigame) * 0.01);
+                    tex_money_top_m = CGlobal.ParseInt((total_betting_mini * rate_minigame_top) * 0.01);
 
                     //-> 합산
                     tex_money = tex_money_s + tex_money_m;
@@ -354,7 +364,7 @@ namespace LSportsServer
                 }
 
                 //-> 정산타입이 [입금-출금] 이면 결과대기 배팅금이 없어도 정산을 처리 한다.
-                if (tex_type_name == "입금-출금" || tex_type_name == "입금-출금+미니롤링")
+                if (tex_type_name == "입금-출금" || tex_type_name == "입금-출금+미니롤링" || tex_type_name == "배팅금(미니제외)" || tex_type_name == "배팅금(미니포함)")
                 {
                     total_betting_ready = 0;
                 }
